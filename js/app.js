@@ -667,11 +667,11 @@ function renderSTLPreview3D() {
     if (fe) {
         var bw = Math.max(smm * 2, 2); var zc = (bt + fh) / 2;
         var tg = new THREE.BoxGeometry(ts+bw*2, bw, fh);
-        scene.add(Object.assign(new THREE.Mesh(tg, frameMat), {position: new THREE.Vector3(0, -ht-bw/2, zc)}));
-        scene.add(Object.assign(new THREE.Mesh(tg.clone(), frameMat), {position: new THREE.Vector3(0, ht+bw/2, zc)}));
+        var m1 = new THREE.Mesh(tg, frameMat); m1.position.set(0, -ht-bw/2, zc); scene.add(m1);
+        var m2 = new THREE.Mesh(tg.clone(), frameMat); m2.position.set(0, ht+bw/2, zc); scene.add(m2);
         var sg = new THREE.BoxGeometry(bw, ts, fh);
-        scene.add(Object.assign(new THREE.Mesh(sg, frameMat), {position: new THREE.Vector3(-ht-bw/2, 0, zc)}));
-        scene.add(Object.assign(new THREE.Mesh(sg.clone(), frameMat), {position: new THREE.Vector3(ht+bw/2, 0, zc)}));
+        var m3 = new THREE.Mesh(sg, frameMat); m3.position.set(-ht-bw/2, 0, zc); scene.add(m3);
+        var m4 = new THREE.Mesh(sg.clone(), frameMat); m4.position.set(ht+bw/2, 0, zc); scene.add(m4);
     }
     var labels = getLabelConfig();
     var th3d = parseFloat(document.getElementById('stlTextHeight').value) || 1.0;
