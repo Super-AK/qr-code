@@ -415,12 +415,22 @@ function escapeXml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').repl
 // =============================================
 function sampleQRMatrix() {
     var ic = document.querySelector('#qrcode canvas');
-    if (!ic) return null;
+    if (!ic) {
+        var img = document.querySelector('#qrcode img');
+        if (!img || !img.src) return null;
+        ic = document.createElement('canvas');
+        ic.width = img.naturalWidth || img.width;
+        ic.height = img.naturalHeight || img.height;
+        ic.getContext('2d').drawImage(img, 0, 0, ic.width, ic.height);
+    }
+    var _wasHidden = ic.style.display === 'none';
+    if (_wasHidden) ic.style.display = 'block';
     var tmp = document.createElement('canvas');
     tmp.width = ic.width; tmp.height = ic.height;
     var tc = tmp.getContext('2d'); tc.drawImage(ic, 0, 0);
-    var img = tc.getImageData(0, 0, tmp.width, tmp.height);
-    var d = img.data; var th = 128;
+    if (_wasHidden) ic.style.display = 'none';
+    var imgData = tc.getImageData(0, 0, tmp.width, tmp.height);
+    var d = imgData.data; var th = 128;
     var patterns = []; var mps = Math.min(tmp.width, tmp.height) / 8;
     for (var y = 0; y < tmp.height; y += 4) {
         for (var x = 0; x < tmp.width; x += 4) {
@@ -610,7 +620,7 @@ function disposeThreeScene() {
 function renderSTLPreview3D() {
     if (typeof THREE === 'undefined') { alert('Three.js wird noch geladen.'); return; }
     if (typeof THREE.OrbitControls === 'undefined') { alert('OrbitControls wird noch geladen.'); return; }
-    var sample = sampleQRMatrix();
+    var sample = null; for (var _retry = 0; _retry < 10; _retry++) { sample = sampleQRMatrix(); if (sample) break; }
     if (!sample) { alert('Kein QR-Code erkannt. Bitte zuerst QR-Code generieren.'); return; }
     disposeThreeScene();
     var container = document.getElementById('stlPreviewContainer');
@@ -693,7 +703,7 @@ function renderSTLPreview3D() {
 // STL EXPORT
 // =============================================
 document.getElementById('stlExportBtn').addEventListener('click', function() {
-    var sample = sampleQRMatrix();
+    var sample = null; for (var _retry = 0; _retry < 10; _retry++) { sample = sampleQRMatrix(); if (sample) break; }
     if (!sample) { alert('Kein QR-Code erkannt.'); return; }
     var smm = parseFloat(document.getElementById('stlModuleSize').value) || 2.0;
     var mh = parseFloat(document.getElementById('stlModuleHeight').value) || 2.0;
@@ -722,7 +732,7 @@ document.getElementById('stlExportBtn').addEventListener('click', function() {
 });
 
 // Button handlers
-document.getElementById('stlPreviewBtn').addEventListener('click', function() { renderSTLPreview3D(); });
+document.getElementById('stlPreviewBtn').addEventListener('click', function() { setTimeout(renderSTLPreview3D, 500); });
 document.getElementById('stlResetCamera').addEventListener('click', function() {
     if (!threeScene || !threeScene.camera) return;
     var s = sampleQRMatrix(); if (!s) return;
