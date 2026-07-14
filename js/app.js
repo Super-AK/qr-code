@@ -1,12 +1,174 @@
 var qrcode = null;
 var threeScene = null;
+var logoImage = null;
 
 // =============================================
 // INIT - Wait for DOM ready
 // =============================================
 document.addEventListener('DOMContentLoaded', function() {
 
-// Slider live updates
+// =============================================
+// DARK MODE
+// =============================================
+var darkModeToggle = document.getElementById('darkModeToggle');
+var darkModeIcon = document.getElementById('darkModeIcon');
+
+function setDarkMode(isDark) {
+    if (isDark) {
+        document.body.classList.remove('light-mode');
+        darkModeIcon.className = 'fas fa-sun';
+        localStorage.setItem('qr-darkmode', 'true');
+    } else {
+        document.body.classList.add('light-mode');
+        darkModeIcon.className = 'fas fa-moon';
+        localStorage.setItem('qr-darkmode', 'false');
+    }
+}
+
+// Check saved preference or system preference
+var savedDark = localStorage.getItem('qr-darkmode');
+if (savedDark === 'true') { setDarkMode(true); }
+else if (savedDark === 'false') { setDarkMode(false); }
+else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) { setDarkMode(true); }
+
+darkModeToggle.addEventListener('click', function() {
+    var isDark = !document.body.classList.contains('light-mode') && 
+                 (localStorage.getItem('qr-darkmode') === 'true' || 
+                  (!localStorage.getItem('qr-darkmode') && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches));
+    setDarkMode(!isDark);
+});
+
+// =============================================
+// LIVE PREVIEW
+// =============================================
+var livePreviewTimer = null;
+var liveCanvas = document.getElementById('livePreviewCanvas');
+var livePreviewDiv = document.getElementById('livePreview');
+
+function updateLivePreview() {
+    clearTimeout(livePreviewTimer);
+    livePreviewTimer = setTimeout(function() {
+        var content = document.getElementById('qrContent') ? document.getElementById('qrContent').value : '';
+        if (!content) { livePreviewDiv.classList.remove('visible'); return; }
+        
+        livePreviewDiv.classList.add('visible');
+        var size = 150;
+        var cd = document.getElementById('qrColorDark').value;
+        var cl = document.getElementById('qrColorLight').value;
+        var el = document.getElementById('qrErrorLevel').value;
+        
+        liveCanvas.width = size;
+        liveCanvas.height = size;
+        var ctx = liveCanvas.getContext('2d');
+        
+        try {
+            var tmpDiv = document.createElement('div');
+            var tmpQR = new QRCode(tmpDiv, { text: content, width: size, height: size, colorDark: cd, colorLight: cl, correctLevel: QRCode.CorrectLevel[el] });
+            setTimeout(function() {
+                var srcCanvas = tmpDiv.querySelector('canvas');
+                if (srcCanvas) { ctx.drawImage(srcCanvas, 0, 0); }
+            }, 100);
+        } catch(e) {}
+    }, 300);
+}
+
+document.getElementById('qrContent').addEventListener('input', updateLivePreview);
+
+// =============================================
+// GRADIENT OPTION
+// =============================================
+document.getElementById('gradientEnable').addEventListener('change', function() {
+    document.getElementById('gradientOptions').classList.toggle('visible', this.checked);
+});
+
+// =============================================
+// LOGO UPLOAD
+// =============================================
+var logoUploadArea = document.getElementById('logoUploadArea');
+var logoInput = document.getElementById('logoInput');
+var logoPreview = document.getElementById('logoPreview');
+var logoRemove = document.getElementById('logoRemove');
+
+logoUploadArea.addEventListener('click', function() { logoInput.click(); });
+
+logoInput.addEventListener('change', function(e) {
+    var file = e.target.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(ev) {
+        var img = new Image();
+        img.onload = function() {
+            logoImage = img;
+            logoPreview.src = ev.target.result;
+            logoPreview.style.display = 'block';
+            logoRemove.style.display = 'inline-block';
+            logoUploadArea.classList.add('has-logo');
+        };
+        img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+});
+
+logoRemove.addEventListener('click', function(e) {
+    e.stopPropagation();
+    logoImage = null;
+    logoPreview.style.display = 'none';
+    logoRemove.style.display = 'none';
+    logoUploadArea.classList.remove('has-logo');
+    logoInput.value = '';
+});
+
+// =============================================
+// HISTORY
+// =============================================
+function getHistory() {
+    try { return JSON.parse(localStorage.getItem('qr-history') || '[]'); } catch(e) { return []; }
+}
+
+function saveToHistory(content, type) {
+    var history = getHistory();
+    history.unshift({ content: content, type: type, time: Date.now() });
+    if (history.length > 10) history = history.slice(0, 10);
+    localStorage.setItem('qr-history', JSON.stringify(history));
+    renderHistory();
+}
+
+function renderHistory() {
+    var history = getHistory();
+    var list = document.getElementById('historyList');
+    if (history.length === 0) {
+        list.innerHTML = '<div class="history-item text-muted" style="justify-content:center;">Noch keine QR-Codes generiert</div>';
+        return;
+    }
+    list.innerHTML = '';
+    history.forEach(function(item, idx) {
+        var div = document.createElement('div');
+        div.className = 'history-item';
+        var txt = item.content.substring(0, 40) + (item.content.length > 40 ? '...' : '');
+        div.innerHTML = '<span class="text"><i class="fas fa-qrcode me-2"></i>' + txt + '</span><span class="delete" data-idx="' + idx + '"><i class="fas fa-trash"></i></span>';
+        div.querySelector('.text').addEventListener('click', function() {
+            document.getElementById('qrType').value = item.type || 'text';
+            updateContentFields(item.type || 'text');
+            setTimeout(function() {
+                var el = document.getElementById('qrContent');
+                if (el) { el.value = item.content; updateLivePreview(); }
+            }, 50);
+        });
+        div.querySelector('.delete').addEventListener('click', function(e) {
+            e.stopPropagation();
+            var h = getHistory();
+            h.splice(idx, 1);
+            localStorage.setItem('qr-history', JSON.stringify(h));
+            renderHistory();
+        });
+        list.appendChild(div);
+    });
+}
+renderHistory();
+
+// =============================================
+// SLIDER LIVE UPDATES
+// =============================================
 document.getElementById('qrSize').addEventListener('input', function() {
     document.getElementById('sizeValue').textContent = this.value;
 });
@@ -108,6 +270,9 @@ function updateContentFields(type) {
         h = '<label for="qrContent" class="form-label"><i class="fas fa-keyboard"></i> Inhalt</label><textarea class="form-control" id="qrContent" rows="3" placeholder="Geben Sie den Inhalt ein..."></textarea>';
     }
     cf.innerHTML = h;
+    // Re-attach live preview listener
+    var newContent = document.getElementById('qrContent');
+    if (newContent) { newContent.addEventListener('input', updateLivePreview); }
 }
 
 function getQRContent(type) {
@@ -141,6 +306,9 @@ document.getElementById('qrForm').addEventListener('submit', function(e) {
     var cd = document.getElementById('qrColorDark').value;
     var cl = document.getElementById('qrColorLight').value;
     var el = document.getElementById('qrErrorLevel').value;
+    var useGradient = document.getElementById('gradientEnable').checked;
+    var gradColor = document.getElementById('gradientColor').value;
+    var gradDir = document.getElementById('gradientDirection').value;
 
     document.getElementById('qrcode').innerHTML = '';
     document.getElementById('qrPlaceholder').style.display = 'none';
@@ -149,28 +317,85 @@ document.getElementById('qrForm').addEventListener('submit', function(e) {
         qrcode = new QRCode(document.getElementById('qrcode'), { text: content, width: sz, height: sz, colorDark: cd, colorLight: cl, correctLevel: QRCode.CorrectLevel[el] });
     } catch(ex) { alert('QR-Code Fehler: ' + ex.message); return; }
 
+    // Apply gradient if enabled (overlay on canvas after render)
+    if (useGradient && logoImage === null) {
+        setTimeout(function() {
+            var canvas = document.querySelector('#qrcode canvas');
+            if (!canvas) return;
+            var ctx = canvas.getContext('2d');
+            var imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            var data = imgData.data;
+            
+            for (var y = 0; y < canvas.height; y++) {
+                for (var x = 0; x < canvas.width; x++) {
+                    var idx = (y * canvas.width + x) * 4;
+                    if (data[idx+3] > 0) { // Not transparent
+                        var t;
+                        if (gradDir === 'horizontal') t = x / canvas.width;
+                        else if (gradDir === 'vertical') t = y / canvas.height;
+                        else if (gradDir === 'diagonal') t = (x + y) / (canvas.width + canvas.height);
+                        else t = Math.sqrt(Math.pow(x - canvas.width/2, 2) + Math.pow(y - canvas.height/2, 2)) / (canvas.width * 0.7);
+                        
+                        t = Math.min(1, Math.max(0, t));
+                        var gc = hexToRgb(gradColor);
+                        var dc = hexToRgb(cd);
+                        data[idx] = Math.round(dc.r + (gc.r - dc.r) * t);
+                        data[idx+1] = Math.round(dc.g + (gc.g - dc.g) * t);
+                        data[idx+2] = Math.round(dc.b + (gc.b - dc.b) * t);
+                    }
+                }
+            }
+            ctx.putImageData(imgData, 0, 0);
+        }, 200);
+    }
+
+    // Apply logo if uploaded
+    if (logoImage) {
+        setTimeout(function() {
+            var canvas = document.querySelector('#qrcode canvas');
+            if (!canvas) return;
+            var ctx = canvas.getContext('2d');
+            var logoSize = canvas.width * 0.2;
+            var x = (canvas.width - logoSize) / 2;
+            var y = (canvas.height - logoSize) / 2;
+            ctx.fillStyle = 'white';
+            ctx.fillRect(x - 4, y - 4, logoSize + 8, logoSize + 8);
+            ctx.drawImage(logoImage, x, y, logoSize, logoSize);
+        }, 250);
+    }
+
     // Apply border/gap
     var be = document.getElementById('borderEnable').checked;
     var bs = parseInt(document.getElementById('borderSize').value);
     var bc = document.getElementById('borderColor').value;
     var br = parseInt(document.getElementById('borderRadius').value);
     var gs = parseInt(document.getElementById('gapSize').value);
-    var gc = document.getElementById('gapColor').value;
+    var gc2 = document.getElementById('gapColor').value;
     var qo = document.getElementById('qrcode-outer');
     var qe = document.getElementById('qrcode');
     qo.style.background = ''; qo.style.padding = ''; qo.style.borderRadius = '';
     qe.style.background = ''; qe.style.padding = ''; qe.style.borderRadius = '';
     if (be && bs > 0) {
         qo.style.background = bc; qo.style.borderRadius = br + 'px'; qo.style.padding = bs + 'px'; qo.style.display = 'inline-block';
-        qe.style.background = gc; qe.style.padding = gs + 'px'; qe.style.borderRadius = Math.max(0, br - bs) + 'px';
+        qe.style.background = gc2; qe.style.padding = gs + 'px'; qe.style.borderRadius = Math.max(0, br - bs) + 'px';
     } else {
-        qo.style.background = gc; qo.style.padding = gs + 'px'; qo.style.borderRadius = br + 'px';
+        qo.style.background = gc2; qo.style.padding = gs + 'px'; qo.style.borderRadius = br + 'px';
     }
 
     updateLabels();
     document.getElementById('downloadBtn').style.display = 'inline-block';
     document.getElementById('exportBtns').style.display = 'flex';
+    
+    // Save to history
+    saveToHistory(content, type);
 });
+
+function hexToRgb(hex) {
+    var r = parseInt(hex.slice(1, 3), 16);
+    var g = parseInt(hex.slice(3, 5), 16);
+    var b = parseInt(hex.slice(5, 7), 16);
+    return {r: r, g: g, b: b};
+}
 
 // =============================================
 // HELPERS
@@ -197,7 +422,6 @@ function sampleQRMatrix() {
     var img = tc.getImageData(0, 0, tmp.width, tmp.height);
     var d = img.data; var th = 128;
     var patterns = []; var mps = Math.min(tmp.width, tmp.height) / 8;
-
     for (var y = 0; y < tmp.height; y += 4) {
         for (var x = 0; x < tmp.width; x += 4) {
             var li = (y * tmp.width + x) * 4;
@@ -214,7 +438,6 @@ function sampleQRMatrix() {
     patterns.sort(function(a,b){return b.size-a.size;});
     patterns = patterns.slice(0, 3);
     if (patterns.length !== 3) return null;
-
     var avg = (patterns[0].size + patterns[1].size + patterns[2].size) / 3;
     var ms = Math.round(avg / 7);
     var mnx = Infinity, mny = Infinity, mxx = 0, mxy = 0;
@@ -290,7 +513,6 @@ document.getElementById('downloadBtn').addEventListener('click', function() {
     var gc = document.getElementById('gapColor').value;
     var iw = ic.width, ih = ic.height;
     var tw = iw + gs*2 + bs*2*(be?1:0);
-
     var tc = document.createElement('canvas').getContext('2d');
     var fw = lb.bold ? 'bold ' : '';
     tc.font = fw + lb.size + 'px Segoe UI, sans-serif';
@@ -298,11 +520,9 @@ document.getElementById('downloadBtn').addEventListener('click', function() {
     var blh = (lb.bottomEnabled && lb.bottomText) ? lb.size+16 : 0;
     var totalH = tlh + tw + blh;
     var totalW = Math.max(tw, tc.measureText(lb.topText||'').width+32, tc.measureText(lb.bottomText||'').width+32);
-
     var oc = document.createElement('canvas'); oc.width = totalW; oc.height = totalH;
     var ctx = oc.getContext('2d');
     var ox = (totalW - tw) / 2;
-
     if (lb.topEnabled && lb.topText) {
         ctx.fillStyle = lb.color; ctx.font = fw + lb.size + 'px Segoe UI, sans-serif';
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -388,79 +608,44 @@ function disposeThreeScene() {
 }
 
 function renderSTLPreview3D() {
-    if (typeof THREE === 'undefined') { alert('Three.js wird noch geladen. Bitte Seite neu laden.'); return; }
-    if (typeof THREE.OrbitControls === 'undefined') { alert('OrbitControls wird noch geladen. Bitte Seite neu laden.'); return; }
-
+    if (typeof THREE === 'undefined') { alert('Three.js wird noch geladen.'); return; }
+    if (typeof THREE.OrbitControls === 'undefined') { alert('OrbitControls wird noch geladen.'); return; }
     var sample = sampleQRMatrix();
     if (!sample) { alert('Kein QR-Code erkannt. Bitte zuerst QR-Code generieren.'); return; }
-
     disposeThreeScene();
-
     var container = document.getElementById('stlPreviewContainer');
     container.classList.add('visible');
-
     var width = container.clientWidth || 400;
     var height = container.clientHeight || 320;
-
     var scene = new THREE.Scene();
     scene.background = new THREE.Color(0xe8e8e8);
-
     var camera = new THREE.PerspectiveCamera(40, width/height, 0.1, 1000);
-
-    var renderer;
-    try {
-        renderer = new THREE.WebGLRenderer({antialias: true, alpha: true});
-    } catch(e) {
-        alert('WebGL Fehler: ' + e.message);
-        container.classList.remove('visible');
-        return;
-    }
+    var renderer = new THREE.WebGLRenderer({antialias: true, alpha: true});
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setClearColor(0xe8e8e8, 1);
     var oldC = container.querySelector('canvas');
     if (oldC) oldC.remove();
     container.insertBefore(renderer.domElement, container.firstChild);
-
     var controls = new THREE.OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.08;
-    controls.rotateSpeed = 0.8;
-
-    // Lighting
+    controls.enableDamping = true; controls.dampingFactor = 0.08;
     scene.add(new THREE.AmbientLight(0xffffff, 0.5));
     scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 0.6));
-    var dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    dirLight.position.set(100, 200, 150);
-    scene.add(dirLight);
-    var dirLight2 = new THREE.DirectionalLight(0xffffff, 0.3);
-    dirLight2.position.set(-100, 50, -100);
-    scene.add(dirLight2);
-
-    // Parameters
+    var dl = new THREE.DirectionalLight(0xffffff, 0.8); dl.position.set(100, 200, 150); scene.add(dl);
+    var dl2 = new THREE.DirectionalLight(0xffffff, 0.3); dl2.position.set(-100, 50, -100); scene.add(dl2);
     var smm = parseFloat(document.getElementById('stlModuleSize').value) || 2.0;
     var mh = parseFloat(document.getElementById('stlModuleHeight').value) || 2.0;
     var bt = parseFloat(document.getElementById('stlBaseThickness').value) || 2.0;
     var inv = document.getElementById('stlInvert').checked;
     var fe = document.getElementById('stlFrame3D').checked;
     var fh = parseFloat(document.getElementById('stlFrameHeight').value) || 2.0;
-    var grid = sample.grid;
-    var mods = sample.modules;
-    var ts = mods * smm;
-    var ht = ts / 2;
-
-    // Materials
-    var baseMat = new THREE.MeshPhongMaterial({color: 0xcccccc, shininess: 20, specular: 0x222222});
-    var modMat = new THREE.MeshPhongMaterial({color: 0x1a1a1a, shininess: 40, specular: 0x444444});
-    var frameMat = new THREE.MeshPhongMaterial({color: 0x999999, shininess: 30, specular: 0x333333});
-
-    // Base plate
+    var grid = sample.grid; var mods = sample.modules; var ts = mods * smm; var ht = ts / 2;
+    var baseMat = new THREE.MeshPhongMaterial({color: 0xcccccc, shininess: 20});
+    var modMat = new THREE.MeshPhongMaterial({color: 0x1a1a1a, shininess: 40});
+    var frameMat = new THREE.MeshPhongMaterial({color: 0x999999, shininess: 30});
     var baseGeo = new THREE.BoxGeometry(ts, ts, bt);
     var baseMesh = new THREE.Mesh(baseGeo, baseMat);
-    baseMesh.position.set(0, 0, bt/2);
-    scene.add(baseMesh);
-
-    // Modules
+    baseMesh.position.set(0, 0, bt/2); scene.add(baseMesh);
     var rects = optimizeRectangles(mergeRectangles(grid, inv));
     rects.forEach(function(r) {
         var w = r.w * smm, h = r.h * smm;
@@ -469,28 +654,21 @@ function renderSTLPreview3D() {
         mesh.position.set(r.x*smm + w/2 - ht, r.y*smm + h/2 - ht, bt + mh/2);
         scene.add(mesh);
     });
-
-    // Frame
     if (fe) {
-        var bw = Math.max(smm * 2, 2);
-        var zc = (bt + fh) / 2;
+        var bw = Math.max(smm * 2, 2); var zc = (bt + fh) / 2;
         var tg = new THREE.BoxGeometry(ts+bw*2, bw, fh);
-        var tm = new THREE.Mesh(tg, frameMat); tm.position.set(0, -ht-bw/2, zc); scene.add(tm);
-        var bm2 = new THREE.Mesh(tg.clone(), frameMat); bm2.position.set(0, ht+bw/2, zc); scene.add(bm2);
+        scene.add(Object.assign(new THREE.Mesh(tg, frameMat), {position: new THREE.Vector3(0, -ht-bw/2, zc)}));
+        scene.add(Object.assign(new THREE.Mesh(tg.clone(), frameMat), {position: new THREE.Vector3(0, ht+bw/2, zc)}));
         var sg = new THREE.BoxGeometry(bw, ts, fh);
-        var lm = new THREE.Mesh(sg, frameMat); lm.position.set(-ht-bw/2, 0, zc); scene.add(lm);
-        var rm = new THREE.Mesh(sg.clone(), frameMat); rm.position.set(ht+bw/2, 0, zc); scene.add(rm);
+        scene.add(Object.assign(new THREE.Mesh(sg, frameMat), {position: new THREE.Vector3(-ht-bw/2, 0, zc)}));
+        scene.add(Object.assign(new THREE.Mesh(sg.clone(), frameMat), {position: new THREE.Vector3(ht+bw/2, 0, zc)}));
     }
-
-    // Text labels in 3D
     var labels = getLabelConfig();
     var th3d = parseFloat(document.getElementById('stlTextHeight').value) || 1.0;
     var textMat = new THREE.MeshPhongMaterial({color: 0x444444, shininess: 40});
     function addText3D(text, yPos) {
         if (!text) return;
-        var cw = smm * 1.5, ch = smm * 2.5;
-        var tw = text.length * cw;
-        var sx = -tw / 2;
+        var cw = smm * 1.5, ch = smm * 2.5, tw = text.length * cw, sx = -tw / 2;
         for (var i = 0; i < text.length; i++) {
             var geo = new THREE.BoxGeometry(cw*0.8, ch, th3d);
             var mesh = new THREE.Mesh(geo, textMat);
@@ -500,42 +678,15 @@ function renderSTLPreview3D() {
     }
     if (labels.topEnabled && labels.topText) addText3D(labels.topText, -ht - ts*0.2);
     if (labels.bottomEnabled && labels.bottomText) addText3D(labels.bottomText, ht + ts*0.2);
-
-    // Camera
     var maxDim = Math.max(ts, fh) * 1.4;
     camera.position.set(maxDim, maxDim * 0.8, maxDim * 0.9);
-    camera.lookAt(0, 0, bt/2);
-    controls.target.set(0, 0, bt/2);
-    controls.update();
-
-    // Animation loop
+    camera.lookAt(0, 0, bt/2); controls.target.set(0, 0, bt/2); controls.update();
     var animFrameId = null;
-    function animate() {
-        animFrameId = requestAnimationFrame(animate);
-        controls.update();
-        renderer.render(scene, camera);
-    }
+    function animate() { animFrameId = requestAnimationFrame(animate); controls.update(); renderer.render(scene, camera); }
     animate();
-
-    function onResize() {
-        var w2 = container.clientWidth, h2 = container.clientHeight;
-        if (w2 > 0 && h2 > 0) {
-            camera.aspect = w2/h2;
-            camera.updateProjectionMatrix();
-            renderer.setSize(w2, h2);
-        }
-    }
+    function onResize() { var w2 = container.clientWidth, h2 = container.clientHeight; if (w2 > 0 && h2 > 0) { camera.aspect = w2/h2; camera.updateProjectionMatrix(); renderer.setSize(w2, h2); } }
     window.addEventListener('resize', onResize);
-
-    // Store ALL references for proper cleanup
-    threeScene = {
-        scene: scene,
-        camera: camera,
-        renderer: renderer,
-        controls: controls,
-        animId: animFrameId,
-        resizeH: onResize
-    };
+    threeScene = { scene: scene, camera: camera, renderer: renderer, controls: controls, animId: animFrameId, resizeH: onResize };
 }
 
 // =============================================
@@ -553,45 +704,24 @@ document.getElementById('stlExportBtn').addEventListener('click', function() {
     var fh = parseFloat(document.getElementById('stlFrameHeight').value) || 2.0;
     var th3d = parseFloat(document.getElementById('stlTextHeight').value) || 1.0;
     var labels = getLabelConfig();
-    var grid = sample.grid;
-    var mods = sample.modules;
-    var ts = mods * smm;
-    var ox = -ts/2, oy = -ts/2;
-    var tris = [];
+    var grid = sample.grid; var mods = sample.modules; var ts = mods * smm;
+    var ox = -ts/2, oy = -ts/2; var tris = [];
     function tri(a,b,c){tris.push({a:[a[0],a[1],a[2]],b:[b[0],b[1],b[2]],c:[c[0],c[1],c[2]]});}
-    function addBox(x,y,w,h,z0,z1){
-        if(w<=0||h<=0||z1<=z0)return;
-        var v=[[x,y,z0],[x+w,y,z0],[x+w,y+h,z0],[x,y+h,z0],[x,y,z1],[x+w,y,z1],[x+w,y+h,z1],[x,y+h,z1]];
-        tri(v[0],v[2],v[1]);tri(v[0],v[3],v[2]);tri(v[4],v[5],v[6]);tri(v[4],v[6],v[7]);
-        tri(v[0],v[1],v[5]);tri(v[0],v[5],v[4]);tri(v[1],v[2],v[6]);tri(v[1],v[6],v[5]);
-        tri(v[2],v[3],v[7]);tri(v[2],v[7],v[6]);tri(v[3],v[0],v[4]);tri(v[3],v[4],v[7]);
-    }
+    function addBox(x,y,w,h,z0,z1){if(w<=0||h<=0||z1<=z0)return;var v=[[x,y,z0],[x+w,y,z0],[x+w,y+h,z0],[x,y+h,z0],[x,y,z1],[x+w,y,z1],[x+w,y+h,z1],[x,y+h,z1]];tri(v[0],v[2],v[1]);tri(v[0],v[3],v[2]);tri(v[4],v[5],v[6]);tri(v[4],v[6],v[7]);tri(v[0],v[1],v[5]);tri(v[0],v[5],v[4]);tri(v[1],v[2],v[6]);tri(v[1],v[6],v[5]);tri(v[2],v[3],v[7]);tri(v[2],v[7],v[6]);tri(v[3],v[0],v[4]);tri(v[3],v[4],v[7]);}
     addBox(ox,oy,ts,ts,0,bt);
     var rects = optimizeRectangles(mergeRectangles(grid, inv));
     rects.forEach(function(r){addBox(r.x*smm+ox,r.y*smm+oy,r.w*smm,r.h*smm,bt,bt+mh);});
     if(fe){var bw=Math.max(smm*2,2);addBox(ox-bw,oy-bw,ts+bw*2,bw,0,fh);addBox(ox-bw,oy+ts,ts+bw*2,bw,0,fh);addBox(ox-bw,oy,bw,ts,0,fh);addBox(ox+ts,oy,bw,ts,0,fh);}
-    if(labels.topEnabled||labels.bottomEnabled){
-        var cw=smm*1.5,cd=smm*2.5;
-        function addT(t,yb){if(!t)return;var tw=t.length*cw;var sx=-tw/2;for(var i=0;i<t.length;i++)addBox(sx+i*cw+cw*0.1,yb-cd/2,cw*0.8,cd,bt,bt+th3d);}
-        if(labels.topEnabled)addT(labels.topText,oy-ts*0.2);
-        if(labels.bottomEnabled)addT(labels.bottomText,oy+ts+ts*0.2);
-    }
+    if(labels.topEnabled||labels.bottomEnabled){var cw=smm*1.5,cd=smm*2.5;function addT(t,yb){if(!t)return;var tw=t.length*cw;var sx=-tw/2;for(var i=0;i<t.length;i++)addBox(sx+i*cw+cw*0.1,yb-cd/2,cw*0.8,cd,bt,bt+th3d);}if(labels.topEnabled)addT(labels.topText,oy-ts*0.2);if(labels.bottomEnabled)addT(labels.bottomText,oy+ts+ts*0.2);}
     function normal(a,b,c){var ux=b[0]-a[0],uy=b[1]-a[1],uz=b[2]-a[2],vx=c[0]-a[0],vy=c[1]-a[1],vz=c[2]-a[2];var nx=uy*vz-uz*vy,ny=uz*vx-ux*vz,nz=ux*vy-uy*vx;var nl=Math.sqrt(nx*nx+ny*ny+nz*nz);return nl===0?[0,0,1]:[nx/nl,ny/nl,nz/nl];}
-    var tc2 = tris.length;
-    var buf = new ArrayBuffer(84 + tc2*50);
-    var vw = new DataView(buf);
-    vw.setUint32(80,tc2,true);
-    var off=84;
-    function wf(v){vw.setFloat32(off,v,true);off+=4;}
-    function wu(v){vw.setUint16(off,v,true);off+=2;}
+    var tc2 = tris.length; var buf = new ArrayBuffer(84 + tc2*50); var vw = new DataView(buf); vw.setUint32(80,tc2,true); var off=84;
+    function wf(v){vw.setFloat32(off,v,true);off+=4;} function wu(v){vw.setUint16(off,v,true);off+=2;}
     tris.forEach(function(t){var n=normal(t.a,t.b,t.c);wf(n[0]);wf(n[1]);wf(n[2]);wf(t.a[0]);wf(t.a[1]);wf(t.a[2]);wf(t.b[0]);wf(t.b[1]);wf(t.b[2]);wf(t.c[0]);wf(t.c[1]);wf(t.c[2]);wu(0);});
-    var blob=new Blob([buf],{type:'application/octet-stream'});
-    var url=URL.createObjectURL(blob);
-    var a=document.createElement('a');a.href=url;a.download=fn.replace(/\.stl$/i,'')+'.stl';a.click();
-    URL.revokeObjectURL(url);
+    var blob=new Blob([buf],{type:'application/octet-stream'}); var url=URL.createObjectURL(blob);
+    var a=document.createElement('a');a.href=url;a.download=fn.replace(/\.stl$/i,'')+'.stl';a.click(); URL.revokeObjectURL(url);
 });
 
-// Button handlers (SINGLE set, no duplicates)
+// Button handlers
 document.getElementById('stlPreviewBtn').addEventListener('click', function() { renderSTLPreview3D(); });
 document.getElementById('stlResetCamera').addEventListener('click', function() {
     if (!threeScene || !threeScene.camera) return;
@@ -601,8 +731,7 @@ document.getElementById('stlResetCamera').addEventListener('click', function() {
     var ts = s.modules * smm;
     var maxDim = Math.max(ts, parseFloat(document.getElementById('stlFrameHeight').value) || 2.0) * 1.4;
     threeScene.camera.position.set(maxDim, maxDim * 0.8, maxDim * 0.9);
-    threeScene.controls.target.set(0, 0, bt/2);
-    threeScene.controls.update();
+    threeScene.controls.target.set(0, 0, bt/2); threeScene.controls.update();
 });
 document.getElementById('stlClosePreview').addEventListener('click', function() {
     disposeThreeScene();

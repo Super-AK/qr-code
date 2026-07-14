@@ -3,12 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QR-Code Generator</title>
+    <title>QR-Code Generator v2.2</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+    <div class="dark-mode-toggle" id="darkModeToggle" title="Dark/Light Mode wechseln">
+        <i class="fas fa-moon" id="darkModeIcon"></i>
+    </div>
+
     <div class="container main-container">
         <div class="card">
             <div class="card-header text-center">
@@ -41,6 +45,12 @@
                                 <textarea class="form-control" id="qrContent" rows="3" placeholder="Geben Sie den Inhalt ein..."></textarea>
                             </div>
 
+                            <!-- Live Preview -->
+                            <div id="livePreview">
+                                <small class="text-muted">Live-Vorschau:</small><br>
+                                <canvas id="livePreviewCanvas"></canvas>
+                            </div>
+
                             <div class="advanced-options">
                                 <h5 class="mb-3"><i class="fas fa-sliders-h"></i> Erweiterte Optionen</h5>
 
@@ -57,6 +67,33 @@
                                     <div class="color-input-wrapper">
                                         <label for="qrColorLight" class="form-label">Hintergrund</label>
                                         <input type="color" class="form-control" id="qrColorLight" value="#ffffff">
+                                    </div>
+                                </div>
+
+                                <!-- Gradient Option -->
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="gradientEnable">
+                                        <label class="form-check-label" for="gradientEnable">
+                                            <i class="fas fa-palette"></i> Farbverlauf aktivieren
+                                        </label>
+                                    </div>
+                                    <div class="gradient-options" id="gradientOptions">
+                                        <div class="row g-2">
+                                            <div class="col-6">
+                                                <label class="form-label small">Verlauf 2. Farbe</label>
+                                                <input type="color" id="gradientColor" class="form-control" value="#667eea">
+                                            </div>
+                                            <div class="col-6">
+                                                <label class="form-label small">Richtung</label>
+                                                <select class="form-select form-select-sm" id="gradientDirection">
+                                                    <option value="horizontal">Horizontal</option>
+                                                    <option value="vertical">Vertikal</option>
+                                                    <option value="diagonal">Diagonal</option>
+                                                    <option value="radial">Radial</option>
+                                                </select>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -105,6 +142,22 @@
                                 </div>
                             </div>
 
+                            <!-- Logo Upload -->
+                            <div class="label-options">
+                                <h5 class="mb-3"><i class="fas fa-image"></i> Logo</h5>
+                                <div class="logo-upload-area" id="logoUploadArea">
+                                    <i class="fas fa-cloud-upload-alt fa-2x text-muted"></i>
+                                    <p class="mb-0 small text-muted">Logo hochladen (optional)</p>
+                                    <input type="file" id="logoInput" accept="image/*" style="display:none;">
+                                    <img id="logoPreview" class="logo-preview" style="display:none;">
+                                </div>
+                                <div class="mt-2">
+                                    <button type="button" class="btn btn-outline-danger btn-sm" id="logoRemove" style="display:none;">
+                                        <i class="fas fa-times"></i> Logo entfernen
+                                    </button>
+                                </div>
+                            </div>
+
                             <div class="label-options">
                                 <h5 class="mb-3"><i class="fas fa-tag"></i> Beschriftung</h5>
                                 <div class="label-row">
@@ -141,6 +194,14 @@
                                 <button type="submit" class="btn btn-generate">
                                     <i class="fas fa-magic"></i> QR-Code Generieren
                                 </button>
+                            </div>
+
+                            <!-- History -->
+                            <div class="label-options mt-3">
+                                <h5 class="mb-2"><i class="fas fa-history"></i> Verlauf</h5>
+                                <div class="history-list" id="historyList">
+                                    <div class="history-item text-muted" style="justify-content:center;">Noch keine QR-Codes generiert</div>
+                                </div>
                             </div>
 
                             <div class="mt-3">
