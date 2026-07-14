@@ -1,6 +1,9 @@
-# QR-Code Generator v2.0
+# QR-Code Generator v2.1
 
 Browser-basierter QR-Code-Generator mit 3D-Vorschau, Beschriftung und STL-Export für 3D-Druck.
+
+[![Version](https://img.shields.io/badge/version-2.1.0-blue.svg)](https://github.com/Super-AK/qr-code)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 ## Features
 
@@ -13,6 +16,7 @@ Browser-basierter QR-Code-Generator mit 3D-Vorschau, Beschriftung und STL-Export
 - Text **auf dem QR-Code** (oben und/oder unten)
 - Einstellbare Schriftgröße (8-48px), Farbe und Stil (Fett)
 - Echtzeit-Vorschau beim Tippen
+- Labels in allen Exporten (PNG, SVG, PDF, STL)
 
 ### Export
 - **PNG**: Mit Rahmen, Gap und Beschriftung
@@ -28,22 +32,31 @@ Browser-basierter QR-Code-Generator mit 3D-Vorschau, Beschriftung und STL-Export
 - Rotation (Maus), Zoom (Scrollrad), Pan (Rechte Maustaste)
 - Kamera-Reset und Schließen-Button
 
+## Quick Start
+
+```bash
+# PHP Built-in Server
+php -S localhost:8000 -t .
+
+# Öffnen im Browser
+open http://localhost:8000/
+```
+
 ## Projektstruktur
 
 ```
 qr-code/
-├── index.php              ← HTML-Struktur (251 Zeilen)
+├── index.php              ← HTML-Struktur
 ├── css/
-│   └── style.css          ← Styles (130 Zeilen)
+│   └── style.css          ← Styles
 ├── js/
-│   └── app.js             ← JavaScript-Logik (644 Zeilen)
+│   └── app.js             ← JavaScript-Logik
 ├── test_stl.js            ← Node.js STL-Testscript
 ├── package.json           ← npm dependencies
-├── .github/
-│   └── copilot-instructions.md
-├── .gitignore
-├── LICENSE                ← MIT
-└── README.md
+├── CHANGELOG.md           ← Versionshistorie
+├── CONTRIBUTING.md        ← Entwickler-Leitfaden
+├── VERSION                ← Aktuelle Version
+└── LICENSE                ← MIT
 ```
 
 ## Technologien
@@ -59,21 +72,7 @@ qr-code/
 | OrbitControls | r128 | 3D-Kamera-Steuerung |
 | jsPDF | 2.5.1 | PDF-Export (dynamisch) |
 
-## Lokales Testen
-
-```bash
-# PHP Built-in Server
-php -S localhost:8000 -t .
-# dann: http://localhost:8000/
-
-# Node STL-Test (optional)
-npm install
-node test_stl.js
-```
-
 ## Deployment
-
-Das Projekt läuft auf einem nginx-Server mit PHP-FPM:
 
 ```
 Server: apps.knutas.de
@@ -83,21 +82,24 @@ URL: http://apps.knutas.de/qr-code/
 
 ## Changelog
 
+Siehe [CHANGELOG.md](CHANGELOG.md) für Details.
+
+### v2.1.0 (2026-07-14)
+- Bugfixes: Labels auf QR-Code, 3D-Vorschau
+- Verbesserte Stabilität
+
 ### v2.0.0 (2026-07-14)
-- 3D-Vorschau mit Three.js (interaktiv)
-- Beschriftung auf dem QR-Code (oben/unten)
+- 3D-Vorschau mit Three.js
+- Beschriftung auf dem QR-Code
 - SVG und PDF Export
-- 3D-Rahmen im STL-Export
-- Extrudierter Text im STL
-- Code-Aufteilung (CSS/JS ausgelagert)
-- UI/UX Verbesserungen (Spinner, responsive)
+- Code-Aufteilung (CSS/JS)
 
 ### v1.0.0 (2026-07-13)
 - Initiale Version
-- QR-Code Generierung (Text, URL, Email, Telefon, SMS, vCard, WiFi)
-- PNG Download
-- STL Export für 3D-Druck
-- Rahmen/Gap Einstellungen
+
+## Contributing
+
+Siehe [CONTRIBUTING.md](CONTRIBUTING.md) für Entwickler-Informationen.
 
 ## Lizenz
 
