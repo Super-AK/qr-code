@@ -191,14 +191,53 @@
                                         <label class="form-check-label" for="borderEnable">Rahmen aktivieren</label>
                                     </div>
                                     <div class="border-options" id="borderOptions" style="display:none;">
-                                        <div class="row g-2 mt-2">
-                                            <div class="col-6">
-                                                <label class="form-label small">Breite</label>
-                                                <input type="range" class="form-range" id="borderSize" min="0" max="40" value="8">
+                                        <div class="mb-2">
+                                            <label class="form-label small">Text im Rahmen</label>
+                                            <input type="text" class="form-control form-control-sm" id="frameText" placeholder="SCAN ME" value="SCAN ME">
+                                        </div>
+                                        <div class="row g-2">
+                                            <div class="col-4">
+                                                <label class="form-label small">Rahmenfarbe</label>
+                                                <input type="color" id="borderColor" class="form-control" value="#000000">
                                             </div>
-                                            <div class="col-6">
-                                                <label class="form-label small">Farbe</label>
-                                                <input type="color" id="borderColor" class="form-control" value="#ffffff">
+                                            <div class="col-4">
+                                                <label class="form-label small">Hintergrund</label>
+                                                <input type="color" id="frameBgColor" class="form-control" value="#ffffff">
+                                            </div>
+                                            <div class="col-4">
+                                                <label class="form-label small">Textfarbe</label>
+                                                <input type="color" id="frameTextColor" class="form-control" value="#000000">
+                                            </div>
+                                        </div>
+                                        <div class="mt-2">
+                                            <label class="form-label small">Rahmenform</label>
+                                            <div class="shape-options">
+                                                <button type="button" class="frame-shape-btn active" data-frame="rectangle" title="Rechteck">
+                                                    <i class="fas fa-square"></i>
+                                                </button>
+                                                <button type="button" class="frame-shape-btn" data-frame="rounded" title="Abgerundet">
+                                                    <i class="fas fa-square-full"></i>
+                                                </button>
+                                                <button type="button" class="frame-shape-btn" data-frame="circle" title="Kreis">
+                                                    <i class="fas fa-circle"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div class="mt-2">
+                                            <label class="form-label small">Symbol</label>
+                                            <div class="shape-options">
+                                                <button type="button" class="frame-symbol-btn active" data-symbol="" title="Kein Symbol">
+                                                    <i class="fas fa-times"></i>
+                                                </button>
+                                                <button type="button" class="frame-symbol-btn" data-symbol="★" title="Stern">
+                                                    ★
+                                                </button>
+                                                <button type="button" class="frame-symbol-btn" data-symbol="●" title="Punkt">
+                                                    ●
+                                                </button>
+                                                <button type="button" class="frame-symbol-btn" data-symbol="◆" title="Diamant">
+                                                    ◆
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
@@ -420,6 +459,6 @@
         </div>
     </div>
 
-    <script type="module" src="/assets/main-Dt4hgCpr.js"></script>
+    <script type="module" src="/assets/main-BT2RSvFD.js"></script>
 </body>
 </html>

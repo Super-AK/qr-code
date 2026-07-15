@@ -9,6 +9,8 @@ let currentType: QRType = 'text';
 let currentDotStyle: DotStyle = 'square';
 let currentEyeStyle: EyeStyle = 'square';
 let currentShape: QRShape = 'square';
+let currentFrameShape: 'rectangle' | 'rounded' | 'circle' = 'rectangle';
+let currentFrameSymbol: string = '';
 let logoImage: HTMLImageElement | null = null;
 let qrcode: any = null;
 
@@ -311,6 +313,39 @@ function initBorder(): void {
   });
   $('borderSize').addEventListener('input', () => regenerateIfActive());
   $('borderColor').addEventListener('input', () => regenerateIfActive());
+  $('frameText').addEventListener('input', () => regenerateIfActive());
+  $('frameBgColor').addEventListener('input', () => regenerateIfActive());
+  $('frameTextColor').addEventListener('input', () => regenerateIfActive());
+
+  // Frame shape buttons
+  document.querySelectorAll('.frame-shape-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const target = e.target as HTMLElement;
+      const btn = target.closest('.frame-shape-btn') as HTMLElement;
+      if (!btn) return;
+      document.querySelectorAll('.frame-shape-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentFrameShape = (btn.dataset.frame || 'rectangle') as 'rectangle' | 'rounded' | 'circle';
+      regenerateIfActive();
+    });
+  });
+
+  // Frame symbol buttons
+  document.querySelectorAll('.frame-symbol-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const target = e.target as HTMLElement;
+      const btn = target.closest('.frame-symbol-btn') as HTMLElement;
+      if (!btn) return;
+      document.querySelectorAll('.frame-symbol-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentFrameSymbol = btn.dataset.symbol || '';
+      regenerateIfActive();
+    });
+  });
 }
 
 // =============================================
@@ -498,6 +533,50 @@ function hexToRgb(hex: string): { r: number; g: number; b: number } {
   return { r, g, b };
 }
 
+function renderFrame(svgContent: string, size: number): string {
+  if (!($('borderEnable') as HTMLInputElement).checked) return svgContent;
+
+  const frameText = ($('frameText') as HTMLInputElement).value;
+  const frameColor = ($('borderColor') as HTMLInputElement).value;
+  const frameBg = ($('frameBgColor') as HTMLInputElement).value;
+  const frameTextColor = ($('frameTextColor') as HTMLInputElement).value;
+  const symbol = currentFrameSymbol;
+
+  const padding = 40;
+  const frameSize = size + padding * 2;
+  const centerX = frameSize / 2;
+  const centerY = frameSize / 2;
+
+  let frameSvg = '';
+
+  if (currentFrameShape === 'circle') {
+    frameSvg = `<circle cx="${centerX}" cy="${centerY}" r="${size/2 + 20}" fill="none" stroke="${frameColor}" stroke-width="8"/>`;
+  } else if (currentFrameShape === 'rounded') {
+    frameSvg = `<rect x="${padding - 10}" y="${padding - 10}" width="${size + 20}" height="${size + 20}" rx="30" fill="none" stroke="${frameColor}" stroke-width="8"/>`;
+  } else {
+    frameSvg = `<rect x="${padding - 10}" y="${padding - 10}" width="${size + 20}" height="${size + 20}" fill="none" stroke="${frameColor}" stroke-width="8"/>`;
+  }
+
+  // Add text around the frame
+  if (frameText) {
+    const fullText = symbol ? frameText.split('').join(symbol) + symbol : frameText;
+    const repeatText = (fullText + '   ').repeat(4);
+
+    if (currentFrameShape === 'circle') {
+      frameSvg += `<defs><path id="textCircle" d="M ${centerX},${centerY} m -${size/2 + 5},0 a ${size/2 + 5},${size/2 + 5} 0 1,1 ${(size/2 + 5) * 2},0 a ${size/2 + 5},${size/2 + 5} 0 1,1 -${(size/2 + 5) * 2},0"/></defs>`;
+      frameSvg += `<text fill="${frameTextColor}" font-size="14" font-family="Arial, sans-serif" font-weight="bold"><textPath href="#textCircle" startOffset="0%">${escapeXml(repeatText.substring(0, 60))}</textPath></text>`;
+    } else {
+      // Rectangle/rounded text path
+      const textY = padding - 25;
+      const textY2 = size + padding + 35;
+      frameSvg += `<text x="${centerX}" y="${textY}" text-anchor="middle" fill="${frameTextColor}" font-size="14" font-family="Arial, sans-serif" font-weight="bold">${escapeXml(frameText)}</text>`;
+      frameSvg += `<text x="${centerX}" y="${textY2}" text-anchor="middle" fill="${frameTextColor}" font-size="14" font-family="Arial, sans-serif" font-weight="bold">${escapeXml(frameText)}</text>`;
+    }
+  }
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${frameSize}" height="${frameSize}" viewBox="0 0 ${frameSize} ${frameSize}"><rect width="${frameSize}" height="${frameSize}" fill="white"/>${frameSvg}<g transform="translate(${padding}, ${padding})">${svgContent}</g></svg>`;
+}
+
 function escapeXml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
@@ -571,61 +650,102 @@ async function exportPNG(): Promise<void> {
   img.src = dataURL;
 }
 
-function exportSVG(): void {
-  const ic = $('qrcode')?.querySelector('canvas') as HTMLCanvasElement;
+async function exportSVG(): Promise<void> {
+  const ic = $('qrcode')?.querySelector('canvas') as HTMLImageElement | HTMLCanvasElement;
   if (!ic) return;
 
   const lb = getLabelConfig();
-  const sz = ic.width;
-  const ctx = ic.getContext('2d')!;
-  const imgData = ctx.getImageData(0, 0, sz, sz);
-  const d = imgData.data;
-  const colorDark = ($('qrColorDark') as HTMLInputElement).value;
-  const colorLight = ($('qrColorLight') as HTMLInputElement).value;
+  const sz = parseInt(($('qrSize') as HTMLInputElement).value) || 256;
 
-  let ms = 1;
-  for (let x = 1; x < sz; x++) {
-    const lum = (d[x * 4] + d[x * 4 + 1] + d[x * 4 + 2]) / 3;
-    const pl = (d[(x - 1) * 4] + d[(x - 1) * 4 + 1] + d[(x - 1) * 4 + 2]) / 3;
-    if ((lum < 128) !== (pl < 128)) { ms = x; break; }
-  }
+  // Build QR modules SVG
+  const designConfig = getDesignConfig();
+  const dataURL = await getStyledQRAsDataURL(designConfig);
+  if (!dataURL) return;
 
-  const mods = Math.round(sz / ms);
-  const tlh = (lb.topEnabled && lb.topText) ? lb.size + 16 : 0;
-  const blh = (lb.bottomEnabled && lb.bottomText) ? lb.size + 16 : 0;
-  const totalH = tlh + sz + blh;
+  // Create QR module rectangles from the data URL
+  const img = new Image();
+  img.onload = () => {
+    const tmpCanvas = document.createElement('canvas');
+    tmpCanvas.width = img.width;
+    tmpCanvas.height = img.height;
+    const ctx = tmpCanvas.getContext('2d')!;
+    ctx.drawImage(img, 0, 0);
+    const imgData = ctx.getImageData(0, 0, tmpCanvas.width, tmpCanvas.height);
+    const d = imgData.data;
 
-  let svg = `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="${sz}" height="${totalH}" viewBox="0 0 ${sz} ${totalH}">\n<rect width="${sz}" height="${totalH}" fill="${colorLight}"/>\n`;
+    let ms = 1;
+    for (let x = 1; x < tmpCanvas.width; x++) {
+      const lum = (d[x * 4] + d[x * 4 + 1] + d[x * 4 + 2]) / 3;
+      const pl = (d[(x - 1) * 4] + d[(x - 1) * 4 + 1] + d[(x - 1) * 4 + 2]) / 3;
+      if ((lum < 128) !== (pl < 128)) { ms = x; break; }
+    }
 
-  if (lb.topEnabled && lb.topText) {
-    svg += `<text x="${sz / 2}" y="${tlh / 2}" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" font-size="${lb.size}" fill="${lb.color}"${lb.bold ? ' font-weight="bold"' : ''}>${escapeXml(lb.topText)}</text>\n`;
-  }
+    const mods = Math.round(tmpCanvas.width / ms);
+    const tlh = (lb.topEnabled && lb.topText) ? lb.size + 16 : 0;
+    const blh = (lb.bottomEnabled && lb.bottomText) ? lb.size + 16 : 0;
+    const totalH = tlh + tmpCanvas.height + blh;
+    const totalW = Math.max(tmpCanvas.width, 200);
 
-  const qrY = tlh;
-  for (let y = 0; y < mods; y++) {
-    for (let x2 = 0; x2 < mods; x2++) {
-      const cx = Math.floor((x2 + 0.5) * ms);
-      const cy = Math.floor((y + 0.5) * ms);
-      const idx = (cy * sz + cx) * 4;
-      if ((d[idx] + d[idx + 1] + d[idx + 2]) / 3 < 128) {
-        svg += `<rect x="${x2 * ms}" y="${qrY + y * ms}" width="${ms}" height="${ms}" fill="${colorDark}"/>\n`;
+    let qrSvg = '';
+    for (let y = 0; y < mods; y++) {
+      for (let x2 = 0; x2 < mods; x2++) {
+        const cx = Math.floor((x2 + 0.5) * ms);
+        const cy = Math.floor((y + 0.5) * ms);
+        const idx = (cy * tmpCanvas.width + cx) * 4;
+        if ((d[idx] + d[idx + 1] + d[idx + 2]) / 3 < 128) {
+          qrSvg += `<rect x="${x2 * ms}" y="${y * ms}" width="${ms}" height="${ms}" fill="${designConfig.colorDark}"/>`;
+        }
       }
     }
-  }
 
-  if (lb.bottomEnabled && lb.bottomText) {
-    svg += `<text x="${sz / 2}" y="${qrY + sz + blh / 2}" text-anchor="middle" dominant-baseline="central" font-family="sans-serif" font-size="${lb.size}" fill="${lb.color}"${lb.bold ? ' font-weight="bold"' : ''}>${escapeXml(lb.bottomText)}</text>\n`;
-  }
+    // Wrap with frame
+    let svg = renderFrame(qrSvg, tmpCanvas.width);
 
-  svg += '</svg>';
+    // Add labels
+    if (lb.topEnabled || lb.bottomEnabled) {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(svg, 'image/svg+xml');
+      const svgEl = doc.documentElement;
+      const frameSize = tmpCanvas.width + 80;
 
-  const blob = new Blob([svg], { type: 'image/svg+xml' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.download = 'qrcode.svg';
-  link.href = url;
-  link.click();
-  URL.revokeObjectURL(url);
+      if (lb.topEnabled && lb.topText) {
+        const text = doc.createElementNS('http://www.w3.org/2000/svg', 'text');
+        text.setAttribute('x', String(frameSize / 2));
+        text.setAttribute('y', String(frameSize + 20));
+        text.setAttribute('text-anchor', 'middle');
+        text.setAttribute('fill', lb.color);
+        text.setAttribute('font-size', String(lb.size));
+        text.setAttribute('font-family', 'Arial, sans-serif');
+        if (lb.bold) text.setAttribute('font-weight', 'bold');
+        text.textContent = lb.topText;
+        svgEl.appendChild(text);
+      }
+
+      if (lb.bottomEnabled && lb.bottomText) {
+        const text = doc.createElementNS('http://www.w3.org/2000/svg', 'text');
+        text.setAttribute('x', String(frameSize / 2));
+        text.setAttribute('y', String(frameSize + 40 + lb.size));
+        text.setAttribute('text-anchor', 'middle');
+        text.setAttribute('fill', lb.color);
+        text.setAttribute('font-size', String(lb.size));
+        text.setAttribute('font-family', 'Arial, sans-serif');
+        if (lb.bold) text.setAttribute('font-weight', 'bold');
+        text.textContent = lb.bottomText;
+        svgEl.appendChild(text);
+      }
+
+      svg = new XMLSerializer().serializeToString(svgEl);
+    }
+
+    const blob = new Blob([svg], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.download = 'qrcode.svg';
+    link.href = url;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+  img.src = dataURL;
 }
 
 function exportPDF(): void {
