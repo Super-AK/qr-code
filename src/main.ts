@@ -101,14 +101,21 @@ function renderContentFields(type: QRType): void {
   let html = '';
   if (config.fields.length === 1 && config.fields[0].id === 'qrContent') {
     const f = config.fields[0];
-    html = `
-      <label for="qrContent" class="form-label">
-        <i class="${config.icon}"></i> ${f.label}
-      </label>
-      <${f.type === 'textarea' ? 'textarea class="form-control" id="qrContent" rows="3"' : `input type="${f.type}" class="form-control" id="qrContent"`} 
-        placeholder="${f.placeholder || ''}"${f.required ? ' required' : ''}>
-      ${f.type === 'textarea' ? '</textarea>' : ''}
-    `;
+    if (f.type === 'textarea') {
+      html = `
+        <label for="qrContent" class="form-label">
+          <i class="${config.icon}"></i> ${f.label}
+        </label>
+        <textarea class="form-control" id="qrContent" rows="3" placeholder="${f.placeholder || ''}"${f.required ? ' required' : ''}></textarea>
+      `;
+    } else {
+      html = `
+        <label for="qrContent" class="form-label">
+          <i class="${config.icon}"></i> ${f.label}
+        </label>
+        <input type="${f.type}" class="form-control" id="qrContent" placeholder="${f.placeholder || ''}"${f.required ? ' required' : ''}>
+      `;
+    }
   } else {
     html = `<label class="form-label"><i class="${config.icon}"></i> ${config.label}</label>`;
     config.fields.forEach(f => {
@@ -129,6 +136,9 @@ function renderContentFields(type: QRType): void {
   const newContentField = $('qrContent');
   if (newContentField) {
     newContentField.addEventListener('input', updateLivePreview);
+    newContentField.addEventListener('blur', () => {
+      (newContentField as HTMLInputElement).value = (newContentField as HTMLInputElement).value.trim();
+    });
   }
   updateLivePreview();
 }
@@ -143,6 +153,9 @@ function initSliders(): void {
   $('labelSize').addEventListener('input', (e) => {
     $('labelSizeValue').textContent = (e.target as HTMLInputElement).value;
   });
+  // Color changes trigger regeneration
+  $('qrColorDark').addEventListener('input', () => regenerateIfActive());
+  $('qrColorLight').addEventListener('input', () => regenerateIfActive());
 }
 
 // =============================================
@@ -229,6 +242,13 @@ function initLogo(): void {
 function initGradient(): void {
   $('gradientEnable').addEventListener('change', (e) => {
     $('gradientOptions').classList.toggle('visible', (e.target as HTMLInputElement).checked);
+    regenerateIfActive();
+  });
+  $('gradientColor').addEventListener('input', () => {
+    regenerateIfActive();
+  });
+  $('gradientDirection').addEventListener('change', () => {
+    regenerateIfActive();
   });
 }
 
@@ -244,6 +264,12 @@ function initBorder(): void {
 // =============================================
 // Shape Buttons
 // =============================================
+function regenerateIfActive(): void {
+  if ($('qrcode').querySelector('svg') || $('qrcode').querySelector('canvas')) {
+    generateQR();
+  }
+}
+
 function initShapeButtons(): void {
   // Dot style buttons
   document.querySelectorAll('.dot-style-btn').forEach(btn => {
