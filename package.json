@@ -1,7 +1,7 @@
 {
   "name": "qr-code-generator",
-  "version": "3.0.0",
-  "description": "Professioneller QR-Code-Generator mit 3D-Export und modernem Design-System",
+  "version": "3.1.0",
+  "description": "Professioneller QR-Code-Generator mit Rahmen-System und 3D-Export",
   "private": true,
   "type": "module",
   "scripts": {
@@ -11,21 +11,14 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "qr-code-styling": "^1.9.2",
+    "qr-code-styling": "^1.5.4",
     "three": "^0.170.0"
   },
   "devDependencies": {
     "typescript": "^5.5.0",
     "vite": "^6.0.0"
   },
-  "keywords": [
-    "qr-code",
-    "generator",
-    "stl",
-    "3d-print",
-    "3mf",
-    "obj"
-  ],
+  "keywords": ["qr-code", "generator", "stl", "3d-print", "3mf", "obj", "frame"],
   "author": "Alex Knutas",
   "license": "MIT"
 }
