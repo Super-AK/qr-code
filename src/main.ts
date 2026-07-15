@@ -12,6 +12,7 @@ let currentShape: QRShape = 'square';
 let currentFrameShape: 'rectangle' | 'rounded' | 'circle' = 'rectangle';
 let currentFrameSymbol: string = '';
 let currentFramePos: 'top' | 'bottom' | 'left' | 'right' | 'around' = 'top';
+let currentFrameLineStyle: 'solid' | 'dashed' | 'dotted' = 'solid';
 let logoImage: HTMLImageElement | null = null;
 let qrcode: any = null;
 
@@ -379,6 +380,32 @@ function initBorder(): void {
     $('frameTextSizeValue').textContent = (e.target as HTMLInputElement).value;
     regenerateIfActive();
   });
+  $('frameTextOffset').addEventListener('input', (e) => {
+    $('frameTextOffsetValue').textContent = (e.target as HTMLInputElement).value;
+    regenerateIfActive();
+  });
+  $('frameOpacity').addEventListener('input', (e) => {
+    $('frameOpacityValue').textContent = (e.target as HTMLInputElement).value;
+    regenerateIfActive();
+  });
+  $('frameTextBold').addEventListener('change', () => regenerateIfActive());
+  $('frameTextItalic').addEventListener('change', () => regenerateIfActive());
+  $('frameTextShadow').addEventListener('change', () => regenerateIfActive());
+
+  // Frame line style buttons
+  document.querySelectorAll('.frame-style-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const target = e.target as HTMLElement;
+      const btn = target.closest('.frame-style-btn') as HTMLElement;
+      if (!btn) return;
+      document.querySelectorAll('.frame-style-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentFrameLineStyle = (btn.dataset.style || 'solid') as 'solid' | 'dashed' | 'dotted';
+      regenerateIfActive();
+    });
+  });
 }
 
 // =============================================
@@ -546,15 +573,22 @@ function applyBorder(): void {
   const frameCornerRadius = parseInt(($('frameCornerRadius') as HTMLInputElement).value) || 0;
   const framePadding = parseInt(($('framePadding') as HTMLInputElement).value) || 20;
   const frameTextSize = parseInt(($('frameTextSize') as HTMLInputElement).value) || 14;
+  const frameTextOffset = parseInt(($('frameTextOffset') as HTMLInputElement).value) || 5;
+  const frameOpacity = parseInt(($('frameOpacity') as HTMLInputElement).value) / 100 || 1;
+  const frameTextBold = ($('frameTextBold') as HTMLInputElement).checked;
+  const frameTextItalic = ($('frameTextItalic') as HTMLInputElement).checked;
+  const frameTextShadow = ($('frameTextShadow') as HTMLInputElement).checked;
 
   const qo = $('qrcode-outer');
   const qe = $('qrcode');
 
   // Apply frame styling
+  const borderStyle = currentFrameLineStyle === 'dashed' ? 'dashed' : currentFrameLineStyle === 'dotted' ? 'dotted' : 'solid';
   qo.style.background = frameBg;
+  qo.style.opacity = String(frameOpacity);
   qo.style.padding = framePadding + 'px';
   qo.style.borderRadius = frameCornerRadius + 'px';
-  qo.style.border = frameWidth + 'px solid ' + frameColor;
+  qo.style.border = frameWidth + 'px ' + borderStyle + ' ' + frameColor;
   qo.style.display = 'inline-block';
   qo.style.position = 'relative';
   qe.style.background = 'white';
@@ -570,24 +604,25 @@ function applyBorder(): void {
     const textDiv = document.createElement('div');
     textDiv.className = 'frame-text-overlay';
 
+    const fontStyle = (frameTextBold ? 'font-weight:bold;' : '') + (frameTextItalic ? 'font-style:italic;' : '');
+    const textShadow = frameTextShadow ? 'text-shadow: 0 0 3px ' + frameBg + ', 0 0 6px ' + frameBg + ';' : '';
+
     if (currentFramePos === 'around') {
-      // Circular text around the frame
       const fullText = currentFrameSymbol ? frameText.split('').join(currentFrameSymbol) + currentFrameSymbol : frameText;
       const repeatText = (fullText + '   ').repeat(4);
-      textDiv.innerHTML = '<svg width="100%" height="100%" style="position:absolute;top:0;left:0;pointer-events:none;"><defs><path id="textCircle" d="M 50,50 m -45,0 a 45,45 0 1,1 90,0 a 45,45 0 1,1 -90,0"/></defs><text fill="' + frameTextColor + '" font-size="' + frameTextSize + '" font-family="Arial, sans-serif" font-weight="bold"><textPath href="#textCircle" startOffset="0%">' + escapeXml(repeatText.substring(0, 60)) + '</textPath></text></svg>';
+      textDiv.innerHTML = '<svg width="100%" height="100%" style="position:absolute;top:0;left:0;pointer-events:none;"><defs><path id="textCircle" d="M 50,50 m -45,0 a 45,45 0 1,1 90,0 a 45,45 0 1,1 -90,0"/></defs><text fill="' + frameTextColor + '" font-size="' + frameTextSize + '" font-family="Arial, sans-serif" ' + fontStyle + '><textPath href="#textCircle" startOffset="0%">' + escapeXml(repeatText.substring(0, 60)) + '</textPath></text></svg>';
       textDiv.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;';
     } else {
-      // Positioned text
-      let cssText = 'position:absolute;font-weight:bold;font-size:' + frameTextSize + 'px;color:' + frameTextColor + ';background:' + frameColor + ';padding:4px 12px;border-radius:6px;white-space:nowrap;z-index:10;';
+      let cssText = 'position:absolute;font-size:' + frameTextSize + 'px;color:' + frameTextColor + ';background:' + frameColor + ';padding:4px 12px;border-radius:6px;white-space:nowrap;z-index:10;' + fontStyle + textShadow;
 
       if (currentFramePos === 'top') {
-        cssText += 'top:-' + (frameTextSize/2 + 4) + 'px;left:50%;transform:translateX(-50%);';
+        cssText += 'top:-' + (frameTextOffset + frameTextSize/2) + 'px;left:50%;transform:translateX(-50%);';
       } else if (currentFramePos === 'bottom') {
-        cssText += 'bottom:-' + (frameTextSize/2 + 4) + 'px;left:50%;transform:translateX(-50%);';
+        cssText += 'bottom:-' + (frameTextOffset + frameTextSize/2) + 'px;left:50%;transform:translateX(-50%);';
       } else if (currentFramePos === 'left') {
-        cssText += 'left:-' + (frameTextSize + 10) + 'px;top:50%;transform:translateY(-50%) rotate(-90deg);';
+        cssText += 'left:-' + (frameTextOffset + frameTextSize + 10) + 'px;top:50%;transform:translateY(-50%) rotate(-90deg);';
       } else if (currentFramePos === 'right') {
-        cssText += 'right:-' + (frameTextSize + 10) + 'px;top:50%;transform:translateY(-50%) rotate(90deg);';
+        cssText += 'right:-' + (frameTextOffset + frameTextSize + 10) + 'px;top:50%;transform:translateY(-50%) rotate(90deg);';
       }
 
       textDiv.textContent = frameText;

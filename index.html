@@ -269,21 +269,56 @@
                                                 <button type="button" class="frame-symbol-btn active" data-symbol="" title="Kein Symbol">
                                                     <i class="fas fa-times"></i>
                                                 </button>
-                                                <button type="button" class="frame-symbol-btn" data-symbol="★" title="Stern">
-                                                    ★
+                                                <button type="button" class="frame-symbol-btn" data-symbol="★" title="Stern">★</button>
+                                                <button type="button" class="frame-symbol-btn" data-symbol="●" title="Punkt">●</button>
+                                                <button type="button" class="frame-symbol-btn" data-symbol="◆" title="Diamant">◆</button>
+                                                <button type="button" class="frame-symbol-btn" data-symbol="•" title="Kreis">•</button>
+                                                <button type="button" class="frame-symbol-btn" data-symbol="-" title="Strich">-</button>
+                                                <button type="button" class="frame-symbol-btn" data-symbol="|" title="Senkrecht">|</button>
+                                                <button type="button" class="frame-symbol-btn" data-symbol="~" title="Welle">~</button>
+                                            </div>
+                                        </div>
+                                        <div class="row g-2 mt-2">
+                                            <div class="col-6">
+                                                <label class="form-label small">Text Abstand: <span id="frameTextOffsetValue">5</span>px</label>
+                                                <input type="range" class="form-range" id="frameTextOffset" min="0" max="30" value="5">
+                                            </div>
+                                            <div class="col-6">
+                                                <label class="form-label small">Deckkraft: <span id="frameOpacityValue">100</span>%</label>
+                                                <input type="range" class="form-range" id="frameOpacity" min="10" max="100" value="100">
+                                            </div>
+                                        </div>
+                                        <div class="mt-2">
+                                            <label class="form-label small">Linien-Stil</label>
+                                            <div class="shape-options">
+                                                <button type="button" class="frame-style-btn active" data-style="solid" title="Durchgezogen">
+                                                    <i class="fas fa-minus"></i>
                                                 </button>
-                                                <button type="button" class="frame-symbol-btn" data-symbol="●" title="Punkt">
-                                                    ●
+                                                <button type="button" class="frame-style-btn" data-style="dashed" title="Gestrichelt">
+                                                    <i class="fas fa-ellipsis-h"></i>
                                                 </button>
-                                                <button type="button" class="frame-symbol-btn" data-symbol="◆" title="Diamant">
-                                                    ◆
+                                                <button type="button" class="frame-style-btn" data-style="dotted" title="Gepunktet">
+                                                    <i class="fas fa-circle" style="font-size:0.6rem;"></i>
                                                 </button>
-                                                <button type="button" class="frame-symbol-btn" data-symbol="•" title="Kreis">
-                                                    •
-                                                </button>
-                                                <button type="button" class="frame-symbol-btn" data-symbol="-" title="Strich">
-                                                    -
-                                                </button>
+                                            </div>
+                                        </div>
+                                        <div class="mt-2">
+                                            <label class="form-label small">Schrift</label>
+                                            <div class="d-flex gap-2">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="frameTextBold" checked>
+                                                    <label class="form-check-label small" for="frameTextBold">Fett</label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" id="frameTextItalic">
+                                                    <label class="form-check-label small" for="frameTextItalic">Kursiv</label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="mt-2">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="frameTextShadow" checked>
+                                                <label class="form-check-label small" for="frameTextShadow">Text-Schatten (Kontrast)</label>
                                             </div>
                                         </div>
                                     </div>
