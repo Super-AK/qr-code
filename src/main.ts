@@ -488,7 +488,7 @@ function generateQR(): void {
 
 function applyBorder(): void {
   const enabled = ($('borderEnable') as HTMLInputElement).checked;
-  const size = parseInt(($('borderSize') as HTMLInputElement).value);
+  const size = 10; // Default border width
   const color = ($('borderColor') as HTMLInputElement).value;
   const qo = $('qrcode-outer');
   const qe = $('qrcode');
