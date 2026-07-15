@@ -177,12 +177,20 @@ export function optimizeRectangles(rects: { x: number; y: number; w: number; h: 
 // =============================================
 interface STLTriangle { a: number[]; b: number[]; c: number[] }
 
+export interface MagnetConfig {
+  type: 'none' | 'round' | 'square';
+  count: number;
+  diameter: number;
+  depth: number;
+}
+
 export function generateSTL(
   matrix: QRMatrix,
   moduleSizeMM: number,
   qrHeight: number,
   baseThickness: number,
-  withBase: boolean
+  withBase: boolean,
+  magnetConfig?: MagnetConfig
 ): Blob {
   const tris: STLTriangle[] = [];
   const { grid, modules } = matrix;
@@ -210,6 +218,53 @@ export function generateSTL(
   // Base plate
   if (withBase) {
     addBox(ox, oy, ts, ts, 0, baseThickness);
+  }
+
+  // Magnet holes
+  if (magnetConfig && magnetConfig.type !== 'none' && withBase) {
+    const holeDepth = magnetConfig.depth;
+    const holeRadius = magnetConfig.diameter / 2;
+    const margin = moduleSizeMM * 2;
+    
+    // Calculate hole positions (evenly distributed in corners)
+    const positions: {x: number, y: number}[] = [];
+    const count = magnetConfig.count;
+    
+    if (count === 2) {
+      positions.push({x: margin, y: margin});
+      positions.push({x: ts - margin, y: ts - margin});
+    } else if (count === 3) {
+      positions.push({x: margin, y: margin});
+      positions.push({x: ts - margin, y: margin});
+      positions.push({x: ts / 2, y: ts - margin});
+    } else if (count >= 4) {
+      positions.push({x: margin, y: margin});
+      positions.push({x: ts - margin, y: margin});
+      positions.push({x: margin, y: ts - margin});
+      positions.push({x: ts - margin, y: ts - margin});
+    }
+
+    // Create holes by subtracting from base
+    for (const pos of positions) {
+      if (magnetConfig.type === 'round') {
+        // Round hole: approximate with 8-sided polygon
+        const segments = 8;
+        const angleStep = (Math.PI * 2) / segments;
+        for (let i = 0; i < segments; i++) {
+          const a1 = i * angleStep;
+          const a2 = (i + 1) * angleStep;
+          const x1 = pos.x + Math.cos(a1) * holeRadius;
+          const y1 = pos.y + Math.sin(a1) * holeRadius;
+          const x2 = pos.x + Math.cos(a2) * holeRadius;
+          const y2 = pos.y + Math.sin(a2) * holeRadius;
+          // Create a thin cylinder segment (hole)
+          addBox(x1, y1, x2 - x1, y2 - y1, baseThickness - holeDepth, baseThickness);
+        }
+      } else {
+        // Square hole
+        addBox(pos.x - holeRadius, pos.y - holeRadius, magnetConfig.diameter, magnetConfig.diameter, baseThickness - holeDepth, baseThickness);
+      }
+    }
   }
 
   // Module extrusions

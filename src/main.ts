@@ -936,15 +936,31 @@ function getLabelConfig() {
 import { sampleQRMatrix, generateSTL, generate3MF, generateOBJ, downloadBlob } from './modules/qr-stl';
 
 function initSTLExport(): void {
+  // Magnet type change handler
+  $('magnetType').addEventListener('change', (e) => {
+    const type = (e.target as HTMLSelectElement).value;
+    document.querySelectorAll('.magnet-options').forEach(el => {
+      (el as HTMLElement).style.display = type === 'none' ? 'none' : 'block';
+    });
+    regenerateIfActive();
+  });
+
   $('stlExportBtn').addEventListener('click', () => {
     const sample = sampleQRMatrix();
     if (!sample) { alert('Kein QR-Code erkannt!'); return; }
+    const magnetConfig = {
+      type: ($('magnetType') as HTMLSelectElement).value as 'none' | 'round' | 'square',
+      count: parseInt(($('magnetCount') as HTMLSelectElement).value) || 4,
+      diameter: parseFloat(($('magnetDiameter') as HTMLInputElement).value) || 6.0,
+      depth: parseFloat(($('magnetDepth') as HTMLInputElement).value) || 2.0
+    };
     const blob = generateSTL(
       sample,
       parseFloat(($('stlModuleSize') as HTMLInputElement).value) || 2.0,
       parseFloat(($('stlQrHeight') as HTMLInputElement).value) || 0.5,
       parseFloat(($('stlBaseThickness') as HTMLInputElement).value) || 2.0,
-      ($('stlWithBase') as HTMLInputElement).checked
+      ($('stlWithBase') as HTMLInputElement).checked,
+      magnetConfig
     );
     downloadBlob(blob, (($('stlFilename') as HTMLInputElement).value || 'qrcode') + '.stl');
   });
