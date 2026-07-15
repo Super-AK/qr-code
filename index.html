@@ -82,8 +82,12 @@
                             </div>
 
                             <!-- Advanced Options -->
-                            <div class="advanced-options">
-                                <h5 class="mb-3"><i class="fas fa-sliders-h"></i> Erweiterte Optionen</h5>
+                            <div class="advanced-options collapsible-section">
+                                <button type="button" class="collapsible-header" onclick="this.parentElement.classList.toggle('open')">
+                                    <h5 class="mb-0"><i class="fas fa-sliders-h"></i> Erweiterte Optionen</h5>
+                                    <i class="fas fa-chevron-down collapsible-icon"></i>
+                                </button>
+                                <div class="collapsible-content">
 
                                 <div class="mb-3">
                                     <label for="qrSize" class="form-label">Größe: <span id="sizeValue">256</span>px</label>
@@ -137,10 +141,15 @@
                                     </select>
                                 </div>
                             </div>
+                            </div>
 
                             <!-- Design Options -->
-                            <div class="design-options">
-                                <h5 class="mb-3"><i class="fas fa-paint-brush"></i> Design</h5>
+                            <div class="design-options collapsible-section">
+                                <button type="button" class="collapsible-header" onclick="this.parentElement.classList.toggle('open')">
+                                    <h5 class="mb-0"><i class="fas fa-paint-brush"></i> Design</h5>
+                                    <i class="fas fa-chevron-down collapsible-icon"></i>
+                                </button>
+                                <div class="collapsible-content">
                                 
                                 <div class="mb-3">
                                     <label class="form-label">Punkt-Style</label>
@@ -195,10 +204,15 @@
                                     </div>
                                 </div>
                             </div>
+                            </div>
 
                             <!-- Logo -->
-                            <div class="logo-section">
-                                <h5 class="mb-3"><i class="fas fa-image"></i> Logo</h5>
+                            <div class="logo-section collapsible-section">
+                                <button type="button" class="collapsible-header" onclick="this.parentElement.classList.toggle('open')">
+                                    <h5 class="mb-0"><i class="fas fa-image"></i> Logo</h5>
+                                    <i class="fas fa-chevron-down collapsible-icon"></i>
+                                </button>
+                                <div class="collapsible-content">
                                 <p class="small text-muted mb-2">Beispiel-Logos (klicken zum Auswählen):</p>
                                 <div class="preset-logos" id="presetLogos">
                                     <button type="button" class="preset-logo-btn" data-logo="wifi" title="WiFi">
@@ -251,10 +265,15 @@
                                     <i class="fas fa-times"></i> Logo entfernen
                                 </button>
                             </div>
+                            </div>
 
                             <!-- Labels -->
-                            <div class="label-section">
-                                <h5 class="mb-3"><i class="fas fa-tag"></i> Beschriftung</h5>
+                            <div class="label-section collapsible-section">
+                                <button type="button" class="collapsible-header" onclick="this.parentElement.classList.toggle('open')">
+                                    <h5 class="mb-0"><i class="fas fa-tag"></i> Beschriftung</h5>
+                                    <i class="fas fa-chevron-down collapsible-icon"></i>
+                                </button>
+                                <div class="collapsible-content">
                                 <div class="label-row">
                                     <div class="form-check">
                                         <input class="form-check-input" type="checkbox" id="labelTopEnable">
@@ -283,6 +302,7 @@
                                         <label class="form-check-label small ms-1" for="labelBold">Fett</label>
                                     </div>
                                 </div>
+                            </div>
                             </div>
 
                             <!-- Generate Button -->
