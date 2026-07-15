@@ -311,7 +311,6 @@ function initBorder(): void {
     $('borderOptions').style.display = (e.target as HTMLInputElement).checked ? 'block' : 'none';
     regenerateIfActive();
   });
-  $('borderSize').addEventListener('input', () => regenerateIfActive());
   $('borderColor').addEventListener('input', () => regenerateIfActive());
   $('frameText').addEventListener('input', () => regenerateIfActive());
   $('frameBgColor').addEventListener('input', () => regenerateIfActive());
