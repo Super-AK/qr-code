@@ -122,6 +122,11 @@ function renderContentFields(type: QRType): void {
   }
 
   container.innerHTML = html;
+  // Re-attach live preview listener
+  const newContentField = $('qrContent');
+  if (newContentField) {
+    newContentField.addEventListener('input', updateLivePreview);
+  }
   updateLivePreview();
 }
 
