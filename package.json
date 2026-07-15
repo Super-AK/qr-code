@@ -1,15 +1,23 @@
 {
   "name": "qr-code-generator",
-  "version": "2.1.0",
-  "description": "Browser-basierter QR-Code-Generator mit 3D-Vorschau und STL-Export",
+  "version": "3.0.0",
+  "description": "Professioneller QR-Code-Generator mit 3D-Export und modernem Design-System",
   "private": true,
-  "dependencies": {
-    "qrcode-generator": "^1.4.4"
-  },
+  "type": "module",
   "scripts": {
-    "stl": "node test_stl.js"
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
   },
-  "keywords": ["qr-code", "generator", "stl", "3d-print"],
+  "dependencies": {
+    "three": "^0.170.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0",
+    "vite": "^6.0.0"
+  },
+  "keywords": ["qr-code", "generator", "stl", "3d-print", "3mf", "obj"],
   "author": "Alex Knutas",
   "license": "MIT"
 }
