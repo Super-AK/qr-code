@@ -245,6 +245,7 @@ function initLogo(): void {
         area.classList.add('has-logo');
         document.querySelectorAll('.preset-logo-btn').forEach(b => b.classList.remove('active'));
         logoBtn.classList.add('active');
+        regenerateIfActive();
       };
       img.src = PRESET_LOGOS[logoKey];
     });
@@ -333,6 +334,7 @@ function initShapeButtons(): void {
       document.querySelectorAll('.dot-style-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       currentDotStyle = (btn.dataset.dot || 'square') as DotStyle;
+      regenerateIfActive();
     });
   });
 
@@ -347,6 +349,7 @@ function initShapeButtons(): void {
       document.querySelectorAll('.eye-style-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       currentEyeStyle = (btn.dataset.eye || 'square') as EyeStyle;
+      regenerateIfActive();
     });
   });
 }
