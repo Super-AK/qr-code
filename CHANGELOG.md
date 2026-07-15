@@ -1,5 +1,21 @@
 # Changelog
 
+## [3.2.0] - 2026-07-15
+
+### Magnetlöcher für STL-Export
+- Magnet-Typ: keine, rund, quadratisch
+- Magnet-Anzahl: 2, 3, 4
+- Magnet-Durchmesser: 2-20mm
+- Magnet-Tiefe: 0.5-10mm
+- Löcher werden in Base-Plate geschnitten
+
+### Fehlerbehandlung und Validierung
+- E-Mail Validierung (Regex)
+- URL Validierung (URL API)
+- Telefon Validierung (Regex)
+- Benutzerfreundliche Fehlermeldungen
+- Try/Catch bei QR-Generierung und Export
+
 ## [3.1.0] - 2026-07-15
 
 ### Rahmen-System (wie GenQRCode)
