@@ -11,6 +11,7 @@ let currentEyeStyle: EyeStyle = 'square';
 let currentShape: QRShape = 'square';
 let currentFrameShape: 'rectangle' | 'rounded' | 'circle' = 'rectangle';
 let currentFrameSymbol: string = '';
+let currentFramePos: 'top' | 'bottom' | 'left' | 'right' | 'around' = 'top';
 let logoImage: HTMLImageElement | null = null;
 let qrcode: any = null;
 
@@ -345,6 +346,39 @@ function initBorder(): void {
       regenerateIfActive();
     });
   });
+
+  // Frame position buttons
+  document.querySelectorAll('.frame-pos-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const target = e.target as HTMLElement;
+      const btn = target.closest('.frame-pos-btn') as HTMLElement;
+      if (!btn) return;
+      document.querySelectorAll('.frame-pos-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentFramePos = (btn.dataset.pos || 'top') as 'top' | 'bottom' | 'left' | 'right' | 'around';
+      regenerateIfActive();
+    });
+  });
+
+  // Frame parameter sliders
+  $('frameWidth').addEventListener('input', (e) => {
+    $('frameWidthValue').textContent = (e.target as HTMLInputElement).value;
+    regenerateIfActive();
+  });
+  $('frameCornerRadius').addEventListener('input', (e) => {
+    $('frameCornerRadiusValue').textContent = (e.target as HTMLInputElement).value;
+    regenerateIfActive();
+  });
+  $('framePadding').addEventListener('input', (e) => {
+    $('framePaddingValue').textContent = (e.target as HTMLInputElement).value;
+    regenerateIfActive();
+  });
+  $('frameTextSize').addEventListener('input', (e) => {
+    $('frameTextSizeValue').textContent = (e.target as HTMLInputElement).value;
+    regenerateIfActive();
+  });
 }
 
 // =============================================
@@ -489,7 +523,6 @@ function generateQR(): void {
 function applyBorder(): void {
   const enabled = ($('borderEnable') as HTMLInputElement).checked;
   if (!enabled) {
-    // Reset when disabled
     const qo = $('qrcode-outer');
     const qe = $('qrcode');
     qo.style.background = '';
@@ -500,7 +533,6 @@ function applyBorder(): void {
     qe.style.background = '';
     qe.style.padding = '';
     qe.style.borderRadius = '';
-    // Remove frame text
     const existingText = qo.querySelector('.frame-text-overlay');
     if (existingText) existingText.remove();
     return;
@@ -510,30 +542,58 @@ function applyBorder(): void {
   const frameBg = ($('frameBgColor') as HTMLInputElement).value;
   const frameTextColor = ($('frameTextColor') as HTMLInputElement).value;
   const frameText = ($('frameText') as HTMLInputElement).value;
+  const frameWidth = parseInt(($('frameWidth') as HTMLInputElement).value) || 4;
+  const frameCornerRadius = parseInt(($('frameCornerRadius') as HTMLInputElement).value) || 0;
+  const framePadding = parseInt(($('framePadding') as HTMLInputElement).value) || 20;
+  const frameTextSize = parseInt(($('frameTextSize') as HTMLInputElement).value) || 14;
 
   const qo = $('qrcode-outer');
   const qe = $('qrcode');
 
   // Apply frame styling
   qo.style.background = frameBg;
-  qo.style.padding = '20px';
-  qo.style.borderRadius = currentFrameShape === 'rounded' ? '30px' : currentFrameShape === 'circle' ? '50%' : '0';
-  qo.style.border = '4px solid ' + frameColor;
+  qo.style.padding = framePadding + 'px';
+  qo.style.borderRadius = frameCornerRadius + 'px';
+  qo.style.border = frameWidth + 'px solid ' + frameColor;
   qo.style.display = 'inline-block';
+  qo.style.position = 'relative';
   qe.style.background = 'white';
   qe.style.padding = '0';
   qe.style.borderRadius = '0';
 
+  // Remove existing text overlay
+  const existingText = qo.querySelector('.frame-text-overlay');
+  if (existingText) existingText.remove();
+
   // Add frame text if present
   if (frameText) {
-    let existingText = qo.querySelector('.frame-text-overlay');
-    if (existingText) existingText.remove();
-
     const textDiv = document.createElement('div');
     textDiv.className = 'frame-text-overlay';
-    textDiv.textContent = frameText;
-    textDiv.style.cssText = 'position:absolute;top:-15px;left:50%;transform:translateX(-50%);background:' + frameColor + ';color:' + frameTextColor + ';padding:4px 16px;border-radius:8px;font-weight:bold;font-size:14px;white-space:nowrap;z-index:10;';
-    qo.style.position = 'relative';
+
+    if (currentFramePos === 'around') {
+      // Circular text around the frame
+      const fullText = currentFrameSymbol ? frameText.split('').join(currentFrameSymbol) + currentFrameSymbol : frameText;
+      const repeatText = (fullText + '   ').repeat(4);
+      textDiv.innerHTML = '<svg width="100%" height="100%" style="position:absolute;top:0;left:0;pointer-events:none;"><defs><path id="textCircle" d="M 50,50 m -45,0 a 45,45 0 1,1 90,0 a 45,45 0 1,1 -90,0"/></defs><text fill="' + frameTextColor + '" font-size="' + frameTextSize + '" font-family="Arial, sans-serif" font-weight="bold"><textPath href="#textCircle" startOffset="0%">' + escapeXml(repeatText.substring(0, 60)) + '</textPath></text></svg>';
+      textDiv.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;';
+    } else {
+      // Positioned text
+      let cssText = 'position:absolute;font-weight:bold;font-size:' + frameTextSize + 'px;color:' + frameTextColor + ';background:' + frameColor + ';padding:4px 12px;border-radius:6px;white-space:nowrap;z-index:10;';
+
+      if (currentFramePos === 'top') {
+        cssText += 'top:-' + (frameTextSize/2 + 4) + 'px;left:50%;transform:translateX(-50%);';
+      } else if (currentFramePos === 'bottom') {
+        cssText += 'bottom:-' + (frameTextSize/2 + 4) + 'px;left:50%;transform:translateX(-50%);';
+      } else if (currentFramePos === 'left') {
+        cssText += 'left:-' + (frameTextSize + 10) + 'px;top:50%;transform:translateY(-50%) rotate(-90deg);';
+      } else if (currentFramePos === 'right') {
+        cssText += 'right:-' + (frameTextSize + 10) + 'px;top:50%;transform:translateY(-50%) rotate(90deg);';
+      }
+
+      textDiv.textContent = frameText;
+      textDiv.style.cssText = cssText;
+    }
+
     qo.appendChild(textDiv);
   }
 }
@@ -572,8 +632,12 @@ function renderFrame(svgContent: string, size: number): string {
   const frameBg = ($('frameBgColor') as HTMLInputElement).value;
   const frameTextColor = ($('frameTextColor') as HTMLInputElement).value;
   const symbol = currentFrameSymbol;
+  const frameWidth = parseInt(($('frameWidth') as HTMLInputElement).value) || 4;
+  const frameCornerRadius = parseInt(($('frameCornerRadius') as HTMLInputElement).value) || 0;
+  const framePadding = parseInt(($('framePadding') as HTMLInputElement).value) || 20;
+  const frameTextSize = parseInt(($('frameTextSize') as HTMLInputElement).value) || 14;
 
-  const padding = 40;
+  const padding = framePadding;
   const frameSize = size + padding * 2;
   const centerX = frameSize / 2;
   const centerY = frameSize / 2;
@@ -581,11 +645,11 @@ function renderFrame(svgContent: string, size: number): string {
   let frameSvg = '';
 
   if (currentFrameShape === 'circle') {
-    frameSvg = `<circle cx="${centerX}" cy="${centerY}" r="${size/2 + 20}" fill="none" stroke="${frameColor}" stroke-width="8"/>`;
+    frameSvg = `<circle cx="${centerX}" cy="${centerY}" r="${size/2 + padding/2}" fill="none" stroke="${frameColor}" stroke-width="${frameWidth}"/>`;
   } else if (currentFrameShape === 'rounded') {
-    frameSvg = `<rect x="${padding - 10}" y="${padding - 10}" width="${size + 20}" height="${size + 20}" rx="30" fill="none" stroke="${frameColor}" stroke-width="8"/>`;
+    frameSvg = `<rect x="${padding/2}" y="${padding/2}" width="${size + padding}" height="${size + padding}" rx="${frameCornerRadius}" fill="none" stroke="${frameColor}" stroke-width="${frameWidth}"/>`;
   } else {
-    frameSvg = `<rect x="${padding - 10}" y="${padding - 10}" width="${size + 20}" height="${size + 20}" fill="none" stroke="${frameColor}" stroke-width="8"/>`;
+    frameSvg = `<rect x="${padding/2}" y="${padding/2}" width="${size + padding}" height="${size + padding}" rx="${frameCornerRadius}" fill="none" stroke="${frameColor}" stroke-width="${frameWidth}"/>`;
   }
 
   // Add text around the frame
@@ -593,15 +657,17 @@ function renderFrame(svgContent: string, size: number): string {
     const fullText = symbol ? frameText.split('').join(symbol) + symbol : frameText;
     const repeatText = (fullText + '   ').repeat(4);
 
-    if (currentFrameShape === 'circle') {
+    if (currentFramePos === 'around') {
       frameSvg += `<defs><path id="textCircle" d="M ${centerX},${centerY} m -${size/2 + 5},0 a ${size/2 + 5},${size/2 + 5} 0 1,1 ${(size/2 + 5) * 2},0 a ${size/2 + 5},${size/2 + 5} 0 1,1 -${(size/2 + 5) * 2},0"/></defs>`;
-      frameSvg += `<text fill="${frameTextColor}" font-size="14" font-family="Arial, sans-serif" font-weight="bold"><textPath href="#textCircle" startOffset="0%">${escapeXml(repeatText.substring(0, 60))}</textPath></text>`;
-    } else {
-      // Rectangle/rounded text path
-      const textY = padding - 25;
-      const textY2 = size + padding + 35;
-      frameSvg += `<text x="${centerX}" y="${textY}" text-anchor="middle" fill="${frameTextColor}" font-size="14" font-family="Arial, sans-serif" font-weight="bold">${escapeXml(frameText)}</text>`;
-      frameSvg += `<text x="${centerX}" y="${textY2}" text-anchor="middle" fill="${frameTextColor}" font-size="14" font-family="Arial, sans-serif" font-weight="bold">${escapeXml(frameText)}</text>`;
+      frameSvg += `<text fill="${frameTextColor}" font-size="${frameTextSize}" font-family="Arial, sans-serif" font-weight="bold"><textPath href="#textCircle" startOffset="0%">${escapeXml(repeatText.substring(0, 60))}</textPath></text>`;
+    } else if (currentFramePos === 'top') {
+      frameSvg += `<text x="${centerX}" y="${padding/2 - 5}" text-anchor="middle" fill="${frameTextColor}" font-size="${frameTextSize}" font-family="Arial, sans-serif" font-weight="bold">${escapeXml(frameText)}</text>`;
+    } else if (currentFramePos === 'bottom') {
+      frameSvg += `<text x="${centerX}" y="${size + padding + padding/2 + 15}" text-anchor="middle" fill="${frameTextColor}" font-size="${frameTextSize}" font-family="Arial, sans-serif" font-weight="bold">${escapeXml(frameText)}</text>`;
+    } else if (currentFramePos === 'left') {
+      frameSvg += `<text x="${padding/2 - 5}" y="${centerY}" text-anchor="middle" fill="${frameTextColor}" font-size="${frameTextSize}" font-family="Arial, sans-serif" font-weight="bold" transform="rotate(-90, ${padding/2 - 5}, ${centerY})">${escapeXml(frameText)}</text>`;
+    } else if (currentFramePos === 'right') {
+      frameSvg += `<text x="${size + padding + padding/2 + 5}" y="${centerY}" text-anchor="middle" fill="${frameTextColor}" font-size="${frameTextSize}" font-family="Arial, sans-serif" font-weight="bold" transform="rotate(90, ${size + padding + padding/2 + 5}, ${centerY})">${escapeXml(frameText)}</text>`;
     }
   }
 
