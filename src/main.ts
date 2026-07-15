@@ -661,15 +661,46 @@ function renderHistory(): void {
 // =============================================
 // STL Export (placeholder - will be full module later)
 // =============================================
+import { sampleQRMatrix, generateSTL, generate3MF, generateOBJ, downloadBlob } from './modules/qr-stl';
+
 function initSTLExport(): void {
   $('stlExportBtn').addEventListener('click', () => {
-    alert('STL-Export wird in Phase 4 implementiert.');
+    const sample = sampleQRMatrix();
+    if (!sample) { alert('Kein QR-Code erkannt!'); return; }
+    const blob = generateSTL(
+      sample,
+      parseFloat(($('stlModuleSize') as HTMLInputElement).value) || 2.0,
+      parseFloat(($('stlQrHeight') as HTMLInputElement).value) || 0.5,
+      parseFloat(($('stlBaseThickness') as HTMLInputElement).value) || 2.0,
+      ($('stlWithBase') as HTMLInputElement).checked
+    );
+    downloadBlob(blob, (($('stlFilename') as HTMLInputElement).value || 'qrcode') + '.stl');
   });
   $('threeMFExportBtn')?.addEventListener('click', () => {
-    alert('3MF-Export wird in Phase 4 implementiert.');
+    const sample = sampleQRMatrix();
+    if (!sample) { alert('Kein QR-Code erkannt!'); return; }
+    const blob = generate3MF(
+      sample,
+      parseFloat(($('stlModuleSize') as HTMLInputElement).value) || 2.0,
+      parseFloat(($('stlQrHeight') as HTMLInputElement).value) || 0.5,
+      parseFloat(($('stlBaseThickness') as HTMLInputElement).value) || 2.0,
+      ($('stlWithBase') as HTMLInputElement).checked,
+      ($('qrColorDark') as HTMLInputElement).value,
+      ($('qrColorLight') as HTMLInputElement).value
+    );
+    downloadBlob(blob, (($('stlFilename') as HTMLInputElement).value || 'qrcode') + '.3mf');
   });
   $('objExportBtn')?.addEventListener('click', () => {
-    alert('OBJ-Export wird in Phase 4 implementiert.');
+    const sample = sampleQRMatrix();
+    if (!sample) { alert('Kein QR-Code erkannt!'); return; }
+    const blob = generateOBJ(
+      sample,
+      parseFloat(($('stlModuleSize') as HTMLInputElement).value) || 2.0,
+      parseFloat(($('stlQrHeight') as HTMLInputElement).value) || 0.5,
+      parseFloat(($('stlBaseThickness') as HTMLInputElement).value) || 2.0,
+      ($('stlWithBase') as HTMLInputElement).checked
+    );
+    downloadBlob(blob, (($('stlFilename') as HTMLInputElement).value || 'qrcode') + '.obj');
   });
 }
 
