@@ -488,23 +488,53 @@ function generateQR(): void {
 
 function applyBorder(): void {
   const enabled = ($('borderEnable') as HTMLInputElement).checked;
-  const size = 10; // Default border width
-  const color = ($('borderColor') as HTMLInputElement).value;
+  if (!enabled) {
+    // Reset when disabled
+    const qo = $('qrcode-outer');
+    const qe = $('qrcode');
+    qo.style.background = '';
+    qo.style.padding = '';
+    qo.style.borderRadius = '';
+    qo.style.border = '';
+    qo.style.position = '';
+    qe.style.background = '';
+    qe.style.padding = '';
+    qe.style.borderRadius = '';
+    // Remove frame text
+    const existingText = qo.querySelector('.frame-text-overlay');
+    if (existingText) existingText.remove();
+    return;
+  }
+
+  const frameColor = ($('borderColor') as HTMLInputElement).value;
+  const frameBg = ($('frameBgColor') as HTMLInputElement).value;
+  const frameTextColor = ($('frameTextColor') as HTMLInputElement).value;
+  const frameText = ($('frameText') as HTMLInputElement).value;
+
   const qo = $('qrcode-outer');
   const qe = $('qrcode');
 
-  qo.style.background = '';
-  qo.style.padding = '';
-  qo.style.borderRadius = '';
-  qe.style.background = '';
-  qe.style.padding = '';
-  qe.style.borderRadius = '';
+  // Apply frame styling
+  qo.style.background = frameBg;
+  qo.style.padding = '20px';
+  qo.style.borderRadius = currentFrameShape === 'rounded' ? '30px' : currentFrameShape === 'circle' ? '50%' : '0';
+  qo.style.border = '4px solid ' + frameColor;
+  qo.style.display = 'inline-block';
+  qe.style.background = 'white';
+  qe.style.padding = '0';
+  qe.style.borderRadius = '0';
 
-  if (enabled && size > 0) {
-    qo.style.background = color;
-    qo.style.padding = size + 'px';
-    qo.style.borderRadius = '15px';
-    qo.style.display = 'inline-block';
+  // Add frame text if present
+  if (frameText) {
+    let existingText = qo.querySelector('.frame-text-overlay');
+    if (existingText) existingText.remove();
+
+    const textDiv = document.createElement('div');
+    textDiv.className = 'frame-text-overlay';
+    textDiv.textContent = frameText;
+    textDiv.style.cssText = 'position:absolute;top:-15px;left:50%;transform:translateX(-50%);background:' + frameColor + ';color:' + frameTextColor + ';padding:4px 16px;border-radius:8px;font-weight:bold;font-size:14px;white-space:nowrap;z-index:10;';
+    qo.style.position = 'relative';
+    qo.appendChild(textDiv);
   }
 }
 
