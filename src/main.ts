@@ -233,6 +233,7 @@ function initLogo(): void {
     remove.style.display = 'none';
     area.classList.remove('has-logo');
     (input as HTMLInputElement).value = '';
+    document.querySelectorAll('.preset-logo-btn').forEach(b => b.classList.remove('active'));
   });
 }
 
