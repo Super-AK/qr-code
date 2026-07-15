@@ -245,40 +245,33 @@ function initBorder(): void {
 // Shape Buttons
 // =============================================
 function initShapeButtons(): void {
-  document.querySelectorAll('.shape-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      document.querySelectorAll('.shape-btn').forEach(b => b.classList.remove('active'));
-      (e.target as HTMLElement).classList.add('active');
-      currentShape = (e.target as HTMLElement).dataset.shape as QRShape;
-    });
-  });
-
   // Dot style buttons
   document.querySelectorAll('.dot-style-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const target = e.target as HTMLElement;
+      const btn = target.closest('.dot-style-btn') as HTMLElement;
+      if (!btn) return;
       document.querySelectorAll('.dot-style-btn').forEach(b => b.classList.remove('active'));
-      (e.target as HTMLElement).classList.add('active');
-      currentDotStyle = (e.target as HTMLElement).dataset.dot as DotStyle;
-      regenerateIfActive();
+      btn.classList.add('active');
+      currentDotStyle = (btn.dataset.dot || 'square') as DotStyle;
     });
   });
 
   // Eye style buttons
   document.querySelectorAll('.eye-style-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const target = e.target as HTMLElement;
+      const btn = target.closest('.eye-style-btn') as HTMLElement;
+      if (!btn) return;
       document.querySelectorAll('.eye-style-btn').forEach(b => b.classList.remove('active'));
-      (e.target as HTMLElement).classList.add('active');
-      currentEyeStyle = (e.target as HTMLElement).dataset.eye as EyeStyle;
-      regenerateIfActive();
+      btn.classList.add('active');
+      currentEyeStyle = (btn.dataset.eye || 'square') as EyeStyle;
     });
   });
-}
-
-function regenerateIfActive(): void {
-  // Auto-regenerate if QR was already created
-  if ($('qrcode').querySelector('svg') || $('qrcode').querySelector('canvas')) {
-    generateQR();
-  }
 }
 
 // =============================================
@@ -297,7 +290,7 @@ function updateLivePreview(): void {
   livePreviewTimer = window.setTimeout(() => {
     const contentField = $('qrContent') as HTMLTextAreaElement | HTMLInputElement;
     if (!contentField) return;
-    const content = contentField.value;
+    const content = contentField.value.trim();
     if (!content) { $('livePreview').classList.remove('visible'); return; }
 
     $('livePreview').classList.add('visible');
@@ -333,10 +326,11 @@ function initGenerate(): void {
 function generateQR(): void {
   const content = generateQRContent(currentType, (id) => {
     const el = $(id) as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
-    return el ? el.value : '';
+    return el ? el.value.trim() : '';
   });
 
-  if (!content) {
+  const trimmedContent = content.trim();
+  if (!trimmedContent) {
     alert('Bitte füllen Sie alle Pflichtfelder aus!');
     return;
   }
