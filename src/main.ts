@@ -39,7 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initLivePreview();
   initGenerate();
   initExport();
-  initHistory();
+
   initSTLExport();
   init3DPreview();
 });
@@ -149,6 +149,7 @@ function renderContentFields(type: QRType): void {
 function initSliders(): void {
   $('qrSize').addEventListener('input', (e) => {
     $('sizeValue').textContent = (e.target as HTMLInputElement).value;
+    regenerateIfActive();
   });
   $('labelSize').addEventListener('input', (e) => {
     $('labelSizeValue').textContent = (e.target as HTMLInputElement).value;
@@ -249,7 +250,10 @@ function initLogo(): void {
     });
   });
 
-  area.addEventListener('click', () => input.click());
+  area.addEventListener('click', (e) => {
+    if ((e.target as HTMLElement).closest('.preset-logo-btn')) return;
+    input.click();
+  });
 
   input.addEventListener('change', (e) => {
     const file = (e.target as HTMLInputElement).files?.[0];
@@ -302,7 +306,10 @@ function initGradient(): void {
 function initBorder(): void {
   $('borderEnable').addEventListener('change', (e) => {
     $('borderOptions').style.display = (e.target as HTMLInputElement).checked ? 'block' : 'none';
+    regenerateIfActive();
   });
+  $('borderSize').addEventListener('input', () => regenerateIfActive());
+  $('borderColor').addEventListener('input', () => regenerateIfActive());
 }
 
 // =============================================
@@ -437,7 +444,7 @@ function generateQR(): void {
   updateLabels();
   $('downloadBtn').style.display = 'inline-block';
   $('exportBtns').style.display = 'flex';
-  saveToHistory(content, currentType);
+
 }
 
 function applyBorder(): void {
@@ -666,62 +673,7 @@ function getLabelConfig() {
   };
 }
 
-// =============================================
-// History
-// =============================================
-function initHistory(): void {
-  renderHistory();
-}
 
-function getHistory(): HistoryItem[] {
-  try { return JSON.parse(localStorage.getItem('qr-history') || '[]'); }
-  catch { return []; }
-}
-
-function saveToHistory(content: string, type: QRType): void {
-  const history = getHistory();
-  history.unshift({ content, type, timestamp: Date.now() });
-  if (history.length > 10) history.length = 10;
-  localStorage.setItem('qr-history', JSON.stringify(history));
-  renderHistory();
-}
-
-function renderHistory(): void {
-  const history = getHistory();
-  const list = $('historyList');
-  if (history.length === 0) {
-    list.innerHTML = '<div class="history-item text-muted" style="justify-content:center;">Noch keine QR-Codes</div>';
-    return;
-  }
-  list.innerHTML = '';
-  history.forEach((item, idx) => {
-    const div = document.createElement('div');
-    div.className = 'history-item';
-    const txt = item.content.substring(0, 40) + (item.content.length > 40 ? '...' : '');
-    div.innerHTML = `<span class="text"><i class="fas fa-qrcode me-2"></i>${escapeXml(txt)}</span><span class="delete" data-idx="${idx}"><i class="fas fa-trash"></i></span>`;
-    div.querySelector('.text')!.addEventListener('click', () => {
-      // Restore from history
-      const tabs = $('qrTypeTabs');
-      tabs.querySelectorAll('.qr-type-tab').forEach(t => t.classList.remove('active'));
-      const targetTab = tabs.querySelector(`[data-type="${item.type}"]`) as HTMLElement;
-      if (targetTab) targetTab.classList.add('active');
-      currentType = item.type;
-      renderContentFields(item.type);
-      setTimeout(() => {
-        const el = $('qrContent') as HTMLTextAreaElement;
-        if (el) { el.value = item.content; updateLivePreview(); }
-      }, 50);
-    });
-    div.querySelector('.delete')!.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const h = getHistory();
-      h.splice(idx, 1);
-      localStorage.setItem('qr-history', JSON.stringify(h));
-      renderHistory();
-    });
-    list.appendChild(div);
-  });
-}
 
 // =============================================
 // STL Export (placeholder - will be full module later)

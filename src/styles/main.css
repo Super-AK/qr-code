@@ -185,21 +185,6 @@ input[type="color"] { height: 50px; border-radius: 12px; border: 2px solid var(-
 .logo-upload-area.has-logo { border-style: solid; border-color: #667eea; }
 .logo-preview { max-width: 80px; max-height: 80px; margin: 8px auto; display: block; border-radius: 8px; }
 
-/* History */
-.history-list {
-    max-height: 200px; overflow-y: auto; border: 1px solid var(--muted-border);
-    border-radius: 12px; background: var(--input-bg);
-}
-.history-item {
-    padding: 8px 12px; border-bottom: 1px solid var(--muted-border);
-    cursor: pointer; transition: background 0.2s; font-size: 0.85rem;
-    display: flex; justify-content: space-between; align-items: center;
-}
-.history-item:last-child { border-bottom: none; }
-.history-item:hover { background: rgba(102,126,234,0.1); }
-.history-item .text { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.history-item .delete { color: #e74c3c; cursor: pointer; padding: 2px 6px; }
-
 /* Live Preview */
 #livePreview { display: none; margin-top: 10px; text-align: center; }
 #livePreview.visible { display: block; }
