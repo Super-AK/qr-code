@@ -1,10 +1,13 @@
 import { QR_TYPES, generateQRContent } from './modules/qr-types';
+import { createStyledQR, getStyledQRAsCanvas, getStyledQRAsDataURL, type DotStyle, type EyeStyle } from './modules/qr-design';
 import type { QRConfig, QRType, QRShape, HistoryItem } from './types';
 
 // =============================================
 // App State
 // =============================================
 let currentType: QRType = 'text';
+let currentDotStyle: DotStyle = 'square';
+let currentEyeStyle: EyeStyle = 'square';
 let currentShape: QRShape = 'square';
 let logoImage: HTMLImageElement | null = null;
 let qrcode: any = null;
@@ -249,6 +252,33 @@ function initShapeButtons(): void {
       currentShape = (e.target as HTMLElement).dataset.shape as QRShape;
     });
   });
+
+  // Dot style buttons
+  document.querySelectorAll('.dot-style-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      document.querySelectorAll('.dot-style-btn').forEach(b => b.classList.remove('active'));
+      (e.target as HTMLElement).classList.add('active');
+      currentDotStyle = (e.target as HTMLElement).dataset.dot as DotStyle;
+      regenerateIfActive();
+    });
+  });
+
+  // Eye style buttons
+  document.querySelectorAll('.eye-style-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      document.querySelectorAll('.eye-style-btn').forEach(b => b.classList.remove('active'));
+      (e.target as HTMLElement).classList.add('active');
+      currentEyeStyle = (e.target as HTMLElement).dataset.eye as EyeStyle;
+      regenerateIfActive();
+    });
+  });
+}
+
+function regenerateIfActive(): void {
+  // Auto-regenerate if QR was already created
+  if ($('qrcode').querySelector('svg') || $('qrcode').querySelector('canvas')) {
+    generateQR();
+  }
 }
 
 // =============================================
@@ -271,28 +301,22 @@ function updateLivePreview(): void {
     if (!content) { $('livePreview').classList.remove('visible'); return; }
 
     $('livePreview').classList.add('visible');
-    const canvas = $('livePreviewCanvas') as HTMLCanvasElement;
+    const previewContainer = $('livePreview');
     const size = 150;
-    canvas.width = size;
-    canvas.height = size;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
 
-    try {
-      const tmpDiv = document.createElement('div');
-      new (window as any).QRCode(tmpDiv, {
-        text: content,
-        width: size,
-        height: size,
-        colorDark: ($('qrColorDark') as HTMLInputElement).value,
-        colorLight: ($('qrColorLight') as HTMLInputElement).value,
-        correctLevel: (window as any).QRCode.CorrectLevel[($('qrErrorLevel') as HTMLInputElement).value],
-      });
-      setTimeout(() => {
-        const srcCanvas = tmpDiv.querySelector('canvas');
-        if (srcCanvas) ctx.drawImage(srcCanvas, 0, 0);
-      }, 100);
-    } catch (e) { /* ignore */ }
+    createStyledQR({
+      text: content,
+      size,
+      colorDark: ($('qrColorDark') as HTMLInputElement).value,
+      colorLight: ($('qrColorLight') as HTMLInputElement).value,
+      dotStyle: currentDotStyle,
+      eyeStyle: currentEyeStyle,
+      gradientEnabled: ($('gradientEnable') as HTMLInputElement).checked,
+      gradientColor: ($('gradientColor') as HTMLInputElement).value,
+      gradientType: 'linear',
+      logoEnabled: false,
+      logoImage: null,
+    }, previewContainer);
   }, 300);
 }
 
@@ -320,49 +344,28 @@ function generateQR(): void {
   const size = parseInt(($('qrSize') as HTMLInputElement).value);
   const colorDark = ($('qrColorDark') as HTMLInputElement).value;
   const colorLight = ($('qrColorLight') as HTMLInputElement).value;
-  const errorLevel = ($('qrErrorLevel') as HTMLInputElement).value;
+  const gradientEnabled = ($('gradientEnable') as HTMLInputElement).checked;
+  const gradientColor = ($('gradientColor') as HTMLInputElement).value;
+  const gradientType = ($('gradientDirection') as HTMLInputElement).value === 'vertical' ? 'linear' : 'linear';
+  const logoEnabled = logoImage !== null;
 
   $('qrcode').innerHTML = '';
   $('qrPlaceholder').style.display = 'none';
 
-  try {
-    qrcode = new (window as any).QRCode($('qrcode'), {
-      text: content,
-      width: size,
-      height: size,
-      colorDark,
-      colorLight,
-      correctLevel: (window as any).QRCode.CorrectLevel[errorLevel],
-    });
-  } catch (ex: any) {
-    alert('QR-Code Fehler: ' + ex.message);
-    return;
-  }
-
-  // Apply gradient
-  if (($('gradientEnable') as HTMLInputElement).checked && !logoImage) {
-    setTimeout(() => {
-      const canvas = $('qrcode')?.querySelector('canvas') as HTMLCanvasElement;
-      if (!canvas) return;
-      applyGradient(canvas);
-    }, 200);
-  }
-
-  // Apply logo
-  if (logoImage) {
-    setTimeout(() => {
-      const canvas = $('qrcode')?.querySelector('canvas') as HTMLCanvasElement;
-      if (!canvas) return;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
-      const logoSize = canvas.width * 0.2;
-      const x = (canvas.width - logoSize) / 2;
-      const y = (canvas.height - logoSize) / 2;
-      ctx.fillStyle = 'white';
-      ctx.fillRect(x - 4, y - 4, logoSize + 8, logoSize + 8);
-      ctx.drawImage(logoImage!, x, y, logoSize, logoSize);
-    }, 250);
-  }
+  // Use qr-code-styling for styled QR
+  createStyledQR({
+    text: content,
+    size,
+    colorDark,
+    colorLight,
+    dotStyle: currentDotStyle,
+    eyeStyle: currentEyeStyle,
+    gradientEnabled,
+    gradientColor,
+    gradientType: gradientEnabled ? 'linear' : 'linear',
+    logoEnabled,
+    logoImage: logoEnabled ? logoImage!.src : null,
+  }, $('qrcode'));
 
   // Apply border
   applyBorder();
@@ -371,36 +374,6 @@ function generateQR(): void {
   $('downloadBtn').style.display = 'inline-block';
   $('exportBtns').style.display = 'flex';
   saveToHistory(content, currentType);
-}
-
-function applyGradient(canvas: HTMLCanvasElement): void {
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return;
-  const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  const data = imgData.data;
-  const colorDark = ($('qrColorDark') as HTMLInputElement).value;
-  const gradColor = ($('gradientColor') as HTMLInputElement).value;
-  const gradDir = ($('gradientDirection') as HTMLInputElement).value;
-
-  for (let y = 0; y < canvas.height; y++) {
-    for (let x = 0; x < canvas.width; x++) {
-      const idx = (y * canvas.width + x) * 4;
-      if (data[idx + 3] > 0) {
-        let t = 0;
-        if (gradDir === 'horizontal') t = x / canvas.width;
-        else if (gradDir === 'vertical') t = y / canvas.height;
-        else t = (x + y) / (canvas.width + canvas.height);
-
-        t = Math.min(1, Math.max(0, t));
-        const dc = hexToRgb(colorDark);
-        const gc = hexToRgb(gradColor);
-        data[idx] = Math.round(dc.r + (gc.r - dc.r) * t);
-        data[idx + 1] = Math.round(dc.g + (gc.g - dc.g) * t);
-        data[idx + 2] = Math.round(dc.b + (gc.b - dc.b) * t);
-      }
-    }
-  }
-  ctx.putImageData(imgData, 0, 0);
 }
 
 function applyBorder(): void {
@@ -423,6 +396,25 @@ function applyBorder(): void {
     qo.style.borderRadius = '15px';
     qo.style.display = 'inline-block';
   }
+}
+
+function getDesignConfig() {
+  return {
+    text: generateQRContent(currentType, (id) => {
+      const el = $(id) as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
+      return el ? el.value : '';
+    }),
+    size: parseInt(($('qrSize') as HTMLInputElement).value) || 256,
+    colorDark: ($('qrColorDark') as HTMLInputElement).value,
+    colorLight: ($('qrColorLight') as HTMLInputElement).value,
+    dotStyle: currentDotStyle,
+    eyeStyle: currentEyeStyle,
+    gradientEnabled: ($('gradientEnable') as HTMLInputElement).checked,
+    gradientColor: ($('gradientColor') as HTMLInputElement).value,
+    gradientType: 'linear' as const,
+    logoEnabled: logoImage !== null,
+    logoImage: logoImage ? logoImage.src : null,
+  };
 }
 
 function hexToRgb(hex: string): { r: number; g: number; b: number } {
@@ -456,49 +448,53 @@ function initExport(): void {
   $('pdfDownloadBtn').addEventListener('click', exportPDF);
 }
 
-function exportPNG(): void {
-  const ic = $('qrcode')?.querySelector('canvas') as HTMLCanvasElement;
-  if (!ic) return;
+async function exportPNG(): Promise<void> {
+  const dataURL = await getStyledQRAsDataURL(getDesignConfig());
+  if (!dataURL) return;
 
-  const lb = getLabelConfig();
-  const iw = ic.width;
-  const ih = ic.height;
-  const tc = document.createElement('canvas').getContext('2d')!;
-  const fw = lb.bold ? 'bold ' : '';
-  tc.font = fw + lb.size + 'px Segoe UI, sans-serif';
-  const tlh = (lb.topEnabled && lb.topText) ? lb.size + 16 : 0;
-  const blh = (lb.bottomEnabled && lb.bottomText) ? lb.size + 16 : 0;
-  const totalH = tlh + iw + blh;
-  const totalW = Math.max(iw, tc.measureText(lb.topText || '').width + 32, tc.measureText(lb.bottomText || '').width + 32);
+  const img = new Image();
+  img.onload = () => {
+    const lb = getLabelConfig();
+    const iw = img.width;
+    const ih = img.height;
+    const tc = document.createElement('canvas').getContext('2d')!;
+    const fw = lb.bold ? 'bold ' : '';
+    tc.font = fw + lb.size + 'px Segoe UI, sans-serif';
+    const tlh = (lb.topEnabled && lb.topText) ? lb.size + 16 : 0;
+    const blh = (lb.bottomEnabled && lb.bottomText) ? lb.size + 16 : 0;
+    const totalH = tlh + iw + blh;
+    const totalW = Math.max(iw, tc.measureText(lb.topText || '').width + 32, tc.measureText(lb.bottomText || '').width + 32);
 
-  const oc = document.createElement('canvas');
-  oc.width = totalW;
-  oc.height = totalH;
-  const ctx = oc.getContext('2d')!;
-  const ox = (totalW - iw) / 2;
+    const oc = document.createElement('canvas');
+    oc.width = totalW;
+    oc.height = totalH;
+    const ctx = oc.getContext('2d')!;
+    const ox = (totalW - iw) / 2;
 
-  if (lb.topEnabled && lb.topText) {
-    ctx.fillStyle = lb.color;
-    ctx.font = fw + lb.size + 'px Segoe UI, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(lb.topText, totalW / 2, tlh / 2);
-  }
+    if (lb.topEnabled && lb.topText) {
+      ctx.fillStyle = lb.color;
+      ctx.font = fw + lb.size + 'px Segoe UI, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(lb.topText, totalW / 2, tlh / 2);
+    }
 
-  ctx.drawImage(ic, ox, tlh, iw, ih);
+    ctx.drawImage(img, ox, tlh, iw, ih);
 
-  if (lb.bottomEnabled && lb.bottomText) {
-    ctx.fillStyle = lb.color;
-    ctx.font = fw + lb.size + 'px Segoe UI, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(lb.bottomText, totalW / 2, tlh + iw + blh / 2);
-  }
+    if (lb.bottomEnabled && lb.bottomText) {
+      ctx.fillStyle = lb.color;
+      ctx.font = fw + lb.size + 'px Segoe UI, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(lb.bottomText, totalW / 2, tlh + iw + blh / 2);
+    }
 
-  const link = document.createElement('a');
-  link.download = 'qrcode.png';
-  link.href = oc.toDataURL('image/png');
-  link.click();
+    const link = document.createElement('a');
+    link.download = 'qrcode.png';
+    link.href = oc.toDataURL('image/png');
+    link.click();
+  };
+  img.src = dataURL;
 }
 
 function exportSVG(): void {

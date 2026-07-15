@@ -205,6 +205,21 @@ input[type="color"] { height: 50px; border-radius: 12px; border: 2px solid var(-
 #livePreview.visible { display: block; }
 #livePreview canvas { max-width: 150px; max-height: 150px; border-radius: 8px; border: 1px solid var(--muted-border); }
 
+
+
+/* Dot & Eye Style Buttons */
+.dot-style-btn, .eye-style-btn {
+    width: 44px; height: 44px; border-radius: 10px;
+    border: 2px solid var(--muted-border); background: var(--input-bg);
+    color: var(--text-color); font-size: 1.1rem;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: all 0.2s;
+}
+.dot-style-btn:hover, .eye-style-btn:hover { border-color: #667eea; }
+.dot-style-btn.active, .eye-style-btn.active {
+    border-color: #667eea; background: rgba(102, 126, 234, 0.15); color: #667eea;
+}
+
 /* Export Buttons */
 .export-buttons { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; justify-content: center; }
 
