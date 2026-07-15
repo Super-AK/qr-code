@@ -498,6 +498,35 @@ function initGenerate(): void {
   });
 }
 
+// =============================================
+// INPUT VALIDATION
+// =============================================
+function validateEmail(email: string): boolean {
+  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return re.test(email);
+}
+
+function validateUrl(url: string): boolean {
+  try {
+    new URL(url);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function validatePhone(phone: string): boolean {
+  const re = /^[\+]?[\d\s\-\(\)]{7,20}$/;
+  return re.test(phone);
+}
+
+function showValidationError(message: string): void {
+  alert(message);
+}
+
+// =============================================
+// GENERATE QR CODE
+// =============================================
 function generateQR(): void {
   const content = generateQRContent(currentType, (id) => {
     const el = $(id) as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
@@ -507,9 +536,41 @@ function generateQR(): void {
   console.log('Generated content:', content);
 
   if (!content || content.trim().length === 0) {
-    console.log('Content is empty, aborting');
-    alert('Bitte füllen Sie alle Pflichtfelder aus!');
+    showValidationError('Bitte füllen Sie alle Pflichtfelder aus!');
     return;
+  }
+
+  // Validate content based on type
+  if (currentType === 'email') {
+    const emailField = $('emailAddress') as HTMLInputElement;
+    if (emailField && emailField.value && !validateEmail(emailField.value)) {
+      showValidationError('Bitte geben Sie eine gültige E-Mail-Adresse ein!');
+      return;
+    }
+  } else if (currentType === 'phone') {
+    const phoneField = $('qrContent') as HTMLInputElement;
+    if (phoneField && phoneField.value && !validatePhone(phoneField.value)) {
+      showValidationError('Bitte geben Sie eine gültige Telefonnummer ein!');
+      return;
+    }
+  } else if (currentType === 'url') {
+    const urlField = $('qrContent') as HTMLInputElement;
+    if (urlField && urlField.value && !validateUrl(urlField.value)) {
+      showValidationError('Bitte geben Sie eine gültige URL ein (z.B. https://beispiel.de)!');
+      return;
+    }
+  } else if (currentType === 'sms') {
+    const smsField = $('smsNumber') as HTMLInputElement;
+    if (smsField && smsField.value && !validatePhone(smsField.value)) {
+      showValidationError('Bitte geben Sie eine gültige Telefonnummer für SMS ein!');
+      return;
+    }
+  } else if (currentType === 'whatsapp') {
+    const waField = $('whatsappPhone') as HTMLInputElement;
+    if (waField && waField.value && !validatePhone(waField.value)) {
+      showValidationError('Bitte geben Sie eine gültige Telefonnummer für WhatsApp ein!');
+      return;
+    }
   }
 
   const size = parseInt(($('qrSize') as HTMLInputElement).value);
@@ -524,19 +585,24 @@ function generateQR(): void {
   $('qrPlaceholder').style.display = 'none';
 
   // Use qr-code-styling for styled QR
-  createStyledQR({
-    text: content,
-    size,
-    colorDark,
-    colorLight,
-    dotStyle: currentDotStyle,
-    eyeStyle: currentEyeStyle,
-    gradientEnabled,
-    gradientColor,
-    gradientType: gradientEnabled ? 'linear' : 'linear',
-    logoEnabled,
-    logoImage: logoEnabled ? logoImage!.src : null,
-  }, $('qrcode'));
+  try {
+    createStyledQR({
+      text: content,
+      size,
+      colorDark,
+      colorLight,
+      dotStyle: currentDotStyle,
+      eyeStyle: currentEyeStyle,
+      gradientEnabled,
+      gradientColor,
+      gradientType: gradientEnabled ? 'linear' : 'linear',
+      logoEnabled,
+      logoImage: logoEnabled ? logoImage!.src : null,
+    }, $('qrcode'));
+  } catch (e: any) {
+    console.error('QR generation error:', e);
+    showValidationError('QR-Code konnte nicht erstellt werden: ' + e.message);
+  }
 
   // Apply border
   applyBorder();
@@ -734,7 +800,8 @@ function initExport(): void {
 }
 
 async function exportPNG(): Promise<void> {
-  const dataURL = await getStyledQRAsDataURL(getDesignConfig());
+  try {
+  var dataURL = await getStyledQRAsDataURL(getDesignConfig());
   if (!dataURL) return;
 
   const img = new Image();
@@ -780,6 +847,10 @@ async function exportPNG(): Promise<void> {
     link.click();
   };
   img.src = dataURL;
+  } catch (e: any) {
+    console.error('PNG export error:', e);
+    showValidationError('PNG-Export fehlgeschlagen: ' + e.message);
+  }
 }
 
 async function exportSVG(): Promise<void> {
