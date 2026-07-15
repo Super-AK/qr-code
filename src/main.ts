@@ -444,8 +444,10 @@ function generateQR(): void {
     return el ? el.value.trim() : '';
   });
 
-  const trimmedContent = content.trim();
-  if (!trimmedContent) {
+  console.log('Generated content:', content);
+
+  if (!content || content.trim().length === 0) {
+    console.log('Content is empty, aborting');
     alert('Bitte füllen Sie alle Pflichtfelder aus!');
     return;
   }
