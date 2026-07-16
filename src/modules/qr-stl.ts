@@ -188,6 +188,7 @@ export interface FrameConfig {
   enabled: boolean;
   width: number;
   height: number;
+  padding: number;
   cornerRadius: number;
 }
 
@@ -292,16 +293,18 @@ export function generateSTL(
   if (frameConfig && frameConfig.enabled) {
     const fw = frameConfig.width;
     const fh = frameConfig.height;
+    const fp = frameConfig.padding;
     const fOffset = fw / 2;
+    const innerOffset = fp;
 
     // Top wall
-    addBox(ox - fOffset, oy - fOffset, ts + fw*2, fw, baseThickness, baseThickness + fh);
+    addBox(ox - fOffset, oy - fOffset - innerOffset, ts + fw*2 + innerOffset*2, fw, baseThickness, baseThickness + fh);
     // Bottom wall
-    addBox(ox - fOffset, oy + ts, ts + fw*2, fw, baseThickness, baseThickness + fh);
+    addBox(ox - fOffset, oy + ts + innerOffset, ts + fw*2 + innerOffset*2, fw, baseThickness, baseThickness + fh);
     // Left wall
-    addBox(ox - fOffset, oy, fw, ts, baseThickness, baseThickness + fh);
+    addBox(ox - fOffset - innerOffset, oy, fw, ts + innerOffset*2, baseThickness, baseThickness + fh);
     // Right wall
-    addBox(ox + ts, oy, fw, ts, baseThickness, baseThickness + fh);
+    addBox(ox + ts + innerOffset, oy, fw, ts + innerOffset*2, baseThickness, baseThickness + fh);
   }
 
   // Build binary STL

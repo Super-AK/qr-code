@@ -1062,8 +1062,9 @@ function initSTLExport(): void {
     };
     const frameConfig = {
       enabled: ($('stlFrame3D') as HTMLInputElement).checked,
-      width: 2.0,
+      width: parseFloat(($('stlFrameWidth') as HTMLInputElement).value) || 3.0,
       height: parseFloat(($('stlFrameHeight') as HTMLInputElement).value) || 2.0,
+      padding: parseFloat(($('stlFramePadding') as HTMLInputElement).value) || 2.0,
       cornerRadius: 0
     };
     const blob = generateSTL(
