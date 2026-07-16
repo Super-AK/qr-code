@@ -1,5 +1,33 @@
 # Changelog
 
+## [3.3.0] - 2026-07-15
+
+### 3D-Vorschau (Three.js)
+- Interaktive 3D-Szene mit OrbitControls
+- Rotation, Zoom, Pan mit Maus
+- Beleuchtung (Ambient + Hemisphere + 2x Directional)
+- Base-Plate + extrudierte Module sichtbar
+- Kamera-Reset und Schließen-Button
+- QR-Matrix wird zuverlässig erkannt (4 Methoden)
+
+### 3D-Rahmen im STL
+- 4 Wände um den QR-Code herum
+- Rahmenbreite (1-20mm) einstellbar
+- Rahmenhöhe einstellbar
+- Rahmen Innenabstand (0-10mm)
+
+### STL/3D Export korrigiert
+- 3D-Vorschau und Export entsprechen jetzt dem QR-Code
+- Kein Mismatch zwischen angezeigtem und exportiertem QR-Code
+- sampleQRMatrix() nutzt QRCode.js mit gleichen Parametern
+
+### Bugfixes
+- Object.assign mit Three.js Position (read-only) → .position.set()
+- stlModuleHeight Input im HTML hinzugefügt
+- stlInvert Input im HTML hinzugefügt
+- STL-Frame Elemente im HTML hinzugefügt
+- Three.js CDN-Links wiederhergestellt
+
 ## [3.2.0] - 2026-07-15
 
 ### Magnetlöcher für STL-Export
@@ -7,97 +35,37 @@
 - Magnet-Anzahl: 2, 3, 4
 - Magnet-Durchmesser: 2-20mm
 - Magnet-Tiefe: 0.5-10mm
-- Löcher werden in Base-Plate geschnitten
 
 ### Fehlerbehandlung und Validierung
 - E-Mail Validierung (Regex)
 - URL Validierung (URL API)
 - Telefon Validierung (Regex)
 - Benutzerfreundliche Fehlermeldungen
-- Try/Catch bei QR-Generierung und Export
 
 ## [3.1.0] - 2026-07-15
 
 ### Rahmen-System (wie GenQRCode)
-- **Text im Rahmen** mit自由な Positionierung
-- **Rahmenform**: Rechteck, Abgerundet, Kreis
-- **Rahmenbreite**: 1-20px (Slider)
-- **Eckenradius**: 0-50px (Slider)
-- **Innenabstand**: 5-60px (Slider)
-- **Rahmenfarbe**, **Hintergrundfarbe**, **Textfarbe**
-- **Textgröße**: 8-32px (Slider)
-- **Textposition**: oben, unten, links, rechts, herum (SVG textPath)
-- **Text Abstand**: 0-30px zum QR-Code
-- **Deckkraft**: 10-100% für Rahmen
-- **Linien-Stil**: durchgezogen, gestrichelt, gepunktet
-- **Schrift**: Fett, Kursiv
-- **Text-Schatten** für besseren Kontrast auf hellem Hintergrund
-- **Symbole**: ★ ● ◆ • - | ~ (8 Stück)
-- SVG-Export mit allen Rahmen-Parametern
+- Text im Rahmen mit 5 Positionen
+- Rahmenform, Breite, Eckenradius, Innenabstand
+- 8 Symbole
+- Linien-Stil, Schrift, Text-Schatten
+- Deckkraft, Text-Abstand
 
-### Bugfixes
-- QR-Code Generierung funktioniert jetzt zuverlässig
-- Alle `borderSize` Referenzen entfernt (Element existiert nicht mehr)
-- `applyBorder()` komplett neu implementiert
+### Drag & Drop
+- Logo per Drag & Drop hochladen
+
+### Responsive
+- Mobile, Tablet, Small Phones optimiert
+
+### Einbettungs-Code
+- HTML, Markdown, iframe Embed-Codes
+- Copy-to-Clipboard
 
 ## [3.0.0] - 2026-07-14
 
 ### Modernisierung
-- **Vite** als Build-System (Hot-Reload, optimierte Bundles)
-- **TypeScript** für Typsicherheit
-- **Modulare Architektur** (ES-Module statt monolithischer Datei)
-- `qr-code-styling` Library für SVG-basierte QR-Codes
-
-### Neue QR-Typen (12 Stück)
-- Text, URL, E-Mail, Telefon, SMS, vCard, WiFi
-- WhatsApp, Kalender, Geolokalisierung, Kryptowährung, Soziale Medien
-
-### UI/UX
-- Tab-basierte QR-Typ-Auswahl
-- Einklappbare Sektionen (Accordion)
-- QR-Code generiert sich bei jeder Änderung
-- Beispiel-Logos (12 Stück) als Vorlagen
-
-### Design-System
-- 5 Punkt-Styles: square, rounded, dots, extra-rounded, classy
-- 2 Augen-Styles: square, rounded
-- Gradient als SVG linearGradient
-
-### Export
-- PNG, SVG, PDF, STL, 3MF, OBJ
-
-## [2.2.2] - 2026-07-14
-
-### Behoben
-- Three.js Object.assign position Bug
-- sampleQRMatrix findet QR-Code auch bei verstecktem Canvas
-- Cache-Busting für Browser-Cache
-
-## [2.2.0] - 2026-07-14
-
-### Hinzugefügt
-- Dark Mode mit System-Erkennung
-- Live-Vorschau beim Tippen
-- Logo-Upload
-- Farbverlauf-Option
-
-## [2.1.0] - 2026-07-14
-
-### Behoben
-- Labels auf QR-Code
-- 3D-Vorschau (schwarzer Bildschirm)
-
-## [2.0.0] - 2026-07-14
-
-### Hinzugefügt
-- Interaktive 3D-Vorschau (Three.js)
-- Beschriftung auf QR-Code
-- SVG und PDF Export
-- STL mit Rahmen und Text
-
-## [1.0.0] - 2026-07-13
-
-### Initiale Version
-- QR-Code Generierung (7 Typen)
-- PNG Download
-- STL Export
+- Vite + TypeScript + modulare Architektur
+- 12 QR-Typen
+- Design-System (qr-code-styling)
+- STL/3MF/OBJ Export
+- Dark Mode, Auto-Regeneration
