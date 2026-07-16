@@ -456,6 +456,12 @@
                                         <label class="form-label small">Basisdicke (mm)</label>
                                         <input type="number" id="stlBaseThickness" class="form-control" value="2.0" step="0.1">
                                     </div>
+                                    <div class="col-6 d-flex align-items-end">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="stlInvert">
+                                            <label class="form-check-label small" for="stlInvert">Invert (weiß=erhöht)</label>
+                                        </div>
+                                    </div>
                                     <div class="col-6">
                                         <label class="form-label small">Modulgröße (mm)</label>
                                         <input type="number" id="stlModuleSize" class="form-control" value="2.0" step="0.1">
@@ -621,6 +627,6 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-    <script type="module" src="/assets/main-Cx1Ybbda.js"></script>
+    <script type="module" src="/src/main.ts"></script>
 </body>
 </html>
