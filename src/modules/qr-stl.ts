@@ -4,41 +4,65 @@ import type { QRMatrix } from '../types';
 // QR Matrix Sampling (from canvas)
 // =============================================
 export function sampleQRMatrix(): QRMatrix | null {
-  // Try canvas first (QRCode.js)
+  // Method 1: Try canvas (QRCode.js)
   const ic = document.querySelector('#qrcode canvas') as HTMLCanvasElement;
-  if (ic) {
-    const wasHidden = ic.style.display === 'none';
-    if (wasHidden) ic.style.display = 'block';
+  if (ic && ic.width > 0 && ic.height > 0) {
     const result = sampleFromCanvas(ic);
-    if (wasHidden) ic.style.display = 'none';
-    return result;
+    if (result) return result;
   }
 
-  // Try img element (QRCode.js fallback)
+  // Method 2: Try img element
   const img = document.querySelector('#qrcode img') as HTMLImageElement;
-  if (img && img.src) {
+  if (img && img.src && img.src.length > 10) {
     const c = document.createElement('canvas');
-    c.width = img.naturalWidth || 256;
-    c.height = img.naturalHeight || 256;
-    c.getContext('2d')!.drawImage(img, 0, 0, c.width, c.height);
-    return sampleFromCanvas(c);
+    c.width = img.naturalWidth || img.width || 256;
+    c.height = img.naturalHeight || img.height || 256;
+    const ctx = c.getContext('2d');
+    if (ctx) {
+      try { ctx.drawImage(img, 0, 0, c.width, c.height); } catch(e) {}
+      const result = sampleFromCanvas(c);
+      if (result) return result;
+    }
   }
 
-  // Try SVG element (qr-code-styling) - render to temp canvas via Image
-  const svgEl = document.querySelector('#qrcode svg') || document.querySelector('#qrcode-outer svg') || document.querySelector('.qr-result svg');
+  // Method 3: Try SVG element
+  const svgEl = document.querySelector('#qrcode svg') as SVGElement;
   if (svgEl) {
-    const c = document.createElement('canvas');
     const svgString = new XMLSerializer().serializeToString(svgEl);
     const svgBase64 = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgString)));
+    const c = document.createElement('canvas');
+    c.width = 256; c.height = 256;
     const tmpImg = new Image();
     tmpImg.src = svgBase64;
-    c.width = 256; c.height = 256;
-    try { c.getContext('2d')!.drawImage(tmpImg, 0, 0, 256, 256); } catch(e) { console.log('SVG render error:', e); }
-    return sampleFromCanvas(c);
+    try { c.getContext('2d')!.drawImage(tmpImg, 0, 0, 256, 256); } catch(e) {}
+    const result = sampleFromCanvas(c);
+    if (result) return result;
   }
 
-  // Fallback: create a simple QR matrix from the content
-  console.log('No QR element found in DOM');
+  // Method 4: Search ALL elements in qrCodeWrapper for any QR-related element
+  const wrapper = document.getElementById('qrCodeWrapper');
+  if (wrapper) {
+    const allCanvases = wrapper.querySelectorAll('canvas');
+    for (const canvas of allCanvases) {
+      if (canvas.width > 0 && canvas.height > 0) {
+        const result = sampleFromCanvas(canvas as HTMLCanvasElement);
+        if (result) return result;
+      }
+    }
+    const allImgs = wrapper.querySelectorAll('img');
+    for (const imgEl of allImgs) {
+      if (imgEl.src && imgEl.src.length > 10) {
+        const c = document.createElement('canvas');
+        c.width = imgEl.naturalWidth || 256;
+        c.height = imgEl.naturalHeight || 256;
+        try { c.getContext('2d')!.drawImage(imgEl, 0, 0, c.width, c.height); } catch(e) {}
+        const result = sampleFromCanvas(c);
+        if (result) return result;
+      }
+    }
+  }
+
+  console.log('sampleQRMatrix: No QR element found');
   return null;
 }
 
