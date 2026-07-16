@@ -1042,7 +1042,7 @@ function getLabelConfig() {
 // =============================================
 // STL Export (placeholder - will be full module later)
 // =============================================
-import { sampleQRMatrix, generateQRMatrixFromContent, generateSTL, generate3MF, generateOBJ, downloadBlob, mergeRectangles, optimizeRectangles } from './modules/qr-stl';
+import { sampleQRMatrix, sampleQRMatrixFromCanvas, generateQRMatrixFromContent, generateSTL, generate3MF, generateOBJ, downloadBlob, mergeRectangles, optimizeRectangles } from './modules/qr-stl';
 
 function initSTLExport(): void {
   // Magnet type change handler
@@ -1134,13 +1134,34 @@ function renderSTLPreview3D(): void {
   // Wait a bit for SVG/Canvas to render
   setTimeout(function() {
     var sample = sampleQRMatrix();
-    // Fallback: generate matrix from content directly
+    // Fallback: generate QR from content using QRCode.js (matches display settings)
     if (!sample) {
-      var content = generateQRContent(currentType, function(id) {
-        var el = $(id);
-        return el ? (el as HTMLInputElement).value.trim() : '';
-      });
-      if (content) sample = generateQRMatrixFromContent(content);
+      try {
+        var content = generateQRContent(currentType, function(id) {
+          var el = $(id);
+          return el ? (el as HTMLInputElement).value.trim() : '';
+        });
+        if (content) {
+          var designConfig = getDesignConfig();
+          var tmpDiv = document.createElement('div');
+          tmpDiv.style.position = 'absolute';
+          tmpDiv.style.left = '-9999px';
+          document.body.appendChild(tmpDiv);
+          new (window as any).QRCode(tmpDiv, {
+            text: content,
+            width: designConfig.size,
+            height: designConfig.size,
+            colorDark: designConfig.colorDark,
+            colorLight: designConfig.colorLight,
+            correctLevel: (window as any).QRCode.CorrectLevel.M
+          });
+          var canvas = tmpDiv.querySelector('canvas');
+          if (canvas && canvas.width > 0) {
+            sample = sampleQRMatrixFromCanvas(canvas as HTMLCanvasElement);
+          }
+          document.body.removeChild(tmpDiv);
+        }
+      } catch(e) { console.log('Fallback QR generation failed:', e); }
     }
     if (!sample) { alert('Kein QR-Code erkannt. Bitte zuerst QR-Code generieren und dann 3D Vorschau klicken.'); return; }
 

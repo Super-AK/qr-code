@@ -41,6 +41,11 @@ export function generateQRMatrixFromContent(content: string, size: number = 256)
   return null;
 }
 
+
+export function sampleQRMatrixFromCanvas(canvas: HTMLCanvasElement): QRMatrix | null {
+  return sampleFromCanvas(canvas);
+}
+
 export function sampleQRMatrix(): QRMatrix | null {
   // Method 1: Try canvas (QRCode.js)
   const ic = document.querySelector('#qrcode canvas') as HTMLCanvasElement;
