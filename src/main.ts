@@ -1042,7 +1042,7 @@ function getLabelConfig() {
 // =============================================
 // STL Export (placeholder - will be full module later)
 // =============================================
-import { sampleQRMatrix, generateSTL, generate3MF, generateOBJ, downloadBlob, mergeRectangles, optimizeRectangles } from './modules/qr-stl';
+import { sampleQRMatrix, generateQRMatrixFromContent, generateSTL, generate3MF, generateOBJ, downloadBlob, mergeRectangles, optimizeRectangles } from './modules/qr-stl';
 
 function initSTLExport(): void {
   // Magnet type change handler
@@ -1134,6 +1134,14 @@ function renderSTLPreview3D(): void {
   // Wait a bit for SVG/Canvas to render
   setTimeout(function() {
     var sample = sampleQRMatrix();
+    // Fallback: generate matrix from content directly
+    if (!sample) {
+      var content = generateQRContent(currentType, function(id) {
+        var el = $(id);
+        return el ? (el as HTMLInputElement).value.trim() : '';
+      });
+      if (content) sample = generateQRMatrixFromContent(content);
+    }
     if (!sample) { alert('Kein QR-Code erkannt. Bitte zuerst QR-Code generieren und dann 3D Vorschau klicken.'); return; }
 
   disposeThreeScene();
@@ -1219,11 +1227,11 @@ function renderSTLPreview3D(): void {
     var bw = Math.max(smm * 2, 2);
     var zc = (bt + fh) / 2;
     var tg = new THREE.BoxGeometry(ts+bw*2, bw, fh);
-    scene.add(Object.assign(new THREE.Mesh(tg, frameMat), {position: new THREE.Vector3(0, -ht-bw/2, zc)}));
-    scene.add(Object.assign(new THREE.Mesh(tg.clone(), frameMat), {position: new THREE.Vector3(0, ht+bw/2, zc)}));
+    var m1 = new THREE.Mesh(tg, frameMat); m1.position.set(0, -ht-bw/2, zc); scene.add(m1);
+    var m2 = new THREE.Mesh(tg.clone(), frameMat); m2.position.set(0, ht+bw/2, zc); scene.add(m2);
     var sg = new THREE.BoxGeometry(bw, ts, fh);
-    scene.add(Object.assign(new THREE.Mesh(sg, frameMat), {position: new THREE.Vector3(-ht-bw/2, 0, zc)}));
-    scene.add(Object.assign(new THREE.Mesh(sg.clone(), frameMat), {position: new THREE.Vector3(ht+bw/2, 0, zc)}));
+    var m3 = new THREE.Mesh(sg, frameMat); m3.position.set(-ht-bw/2, 0, zc); scene.add(m3);
+    var m4 = new THREE.Mesh(sg.clone(), frameMat); m4.position.set(ht+bw/2, 0, zc); scene.add(m4);
   }
 
   // Camera

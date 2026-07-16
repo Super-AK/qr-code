@@ -3,6 +3,44 @@ import type { QRMatrix } from '../types';
 // =============================================
 // QR Matrix Sampling (from canvas)
 // =============================================
+// Generate QR matrix directly from content (no DOM needed)
+export function generateQRMatrixFromContent(content: string, size: number = 256): QRMatrix | null {
+  if (!content) return null;
+
+  // Create a temporary div and use QRCode.js to generate
+  const tmpDiv = document.createElement('div');
+  tmpDiv.style.position = 'absolute';
+  tmpDiv.style.left = '-9999px';
+  document.body.appendChild(tmpDiv);
+
+  try {
+    // Use QRCode.js if available
+    if (typeof (window as any).QRCode !== 'undefined') {
+      new (window as any).QRCode(tmpDiv, {
+        text: content,
+        width: size,
+        height: size,
+        colorDark: '#000000',
+        colorLight: '#ffffff',
+        correctLevel: (window as any).QRCode.CorrectLevel.M
+      });
+
+      // Wait for canvas to be ready
+      const canvas = tmpDiv.querySelector('canvas') as HTMLCanvasElement;
+      if (canvas && canvas.width > 0) {
+        const result = sampleFromCanvas(canvas);
+        document.body.removeChild(tmpDiv);
+        return result;
+      }
+    }
+  } catch(e) {
+    console.log('QRCode.js generation failed:', e);
+  }
+
+  document.body.removeChild(tmpDiv);
+  return null;
+}
+
 export function sampleQRMatrix(): QRMatrix | null {
   // Method 1: Try canvas (QRCode.js)
   const ic = document.querySelector('#qrcode canvas') as HTMLCanvasElement;
