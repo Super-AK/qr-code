@@ -4,7 +4,7 @@ import type { QRMatrix } from '../types';
 // QR Matrix Sampling (from canvas)
 // =============================================
 export function sampleQRMatrix(): QRMatrix | null {
-  // Try canvas first
+  // Try canvas first (QRCode.js)
   const ic = document.querySelector('#qrcode canvas') as HTMLCanvasElement;
   if (ic) {
     const wasHidden = ic.style.display === 'none';
@@ -18,29 +18,24 @@ export function sampleQRMatrix(): QRMatrix | null {
   const img = document.querySelector('#qrcode img') as HTMLImageElement;
   if (img && img.src) {
     const c = document.createElement('canvas');
-    c.width = img.naturalWidth || img.width;
-    c.height = img.naturalHeight || img.height;
+    c.width = img.naturalWidth || 256;
+    c.height = img.naturalHeight || 256;
     c.getContext('2d')!.drawImage(img, 0, 0, c.width, c.height);
     return sampleFromCanvas(c);
   }
 
-  // Try SVG element (qr-code-styling) - render to canvas
-  const svgEl = document.querySelector('#qrcode svg') as SVGElement;
+  // Try SVG element (qr-code-styling) - render to temp canvas via Image
+  const svgEl = document.querySelector('#qrcode svg');
   if (svgEl) {
     const c = document.createElement('canvas');
-    const svgData = new XMLSerializer().serializeToString(svgEl);
-    const svgBlob = new Blob([svgData], {type: 'image/svg+xml;charset=utf-8'});
-    const url = URL.createObjectURL(svgBlob);
-    const img2 = new Image();
-    img2.src = url;
-    // SVG images are loaded synchronously when using blob URLs
-    if (img2.complete) {
-      c.width = img2.naturalWidth || 256;
-      c.height = img2.naturalHeight || 256;
-      c.getContext('2d')!.drawImage(img2, 0, 0, c.width, c.height);
-      URL.revokeObjectURL(url);
-      return sampleFromCanvas(c);
-    }
+    const svgString = new XMLSerializer().serializeToString(svgEl);
+    const svgBase64 = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgString)));
+    const tmpImg = new Image();
+    tmpImg.src = svgBase64;
+    // Force synchronous load for data URLs
+    c.width = 256; c.height = 256;
+    try { c.getContext('2d')!.drawImage(tmpImg, 0, 0, 256, 256); } catch(e) {}
+    return sampleFromCanvas(c);
   }
 
   return null;

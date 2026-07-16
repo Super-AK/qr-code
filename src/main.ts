@@ -1125,11 +1125,13 @@ function disposeThreeScene(): void {
 }
 
 function renderSTLPreview3D(): void {
-  if (typeof THREE === 'undefined') { alert('Three.js wird noch geladen.'); return; }
-  if (typeof THREE.OrbitControls === 'undefined') { alert('OrbitControls wird noch geladen.'); return; }
+  if (typeof THREE === 'undefined') { alert('Three.js wird noch geladen. Bitte Seite neu laden.'); return; }
+  if (typeof THREE.OrbitControls === 'undefined') { alert('OrbitControls wird noch geladen. Bitte Seite neu laden.'); return; }
 
-  var sample = sampleQRMatrix();
-  if (!sample) { alert('Kein QR-Code erkannt. Bitte zuerst QR-Code generieren.'); return; }
+  // Wait a bit for SVG/Canvas to render
+  setTimeout(function() {
+    var sample = sampleQRMatrix();
+    if (!sample) { alert('Kein QR-Code erkannt. Bitte zuerst QR-Code generieren und dann 3D Vorschau klicken.'); return; }
 
   disposeThreeScene();
 
@@ -1248,6 +1250,7 @@ function renderSTLPreview3D(): void {
   window.addEventListener('resize', onResize);
 
   threeScene = {scene: scene, camera: camera, renderer: renderer, controls: controls, animId: animFrameId, resizeH: onResize};
+  }, 500); // Wait for SVG/Canvas to render
 }
 
 function init3DPreview(): void {
