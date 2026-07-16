@@ -640,6 +640,7 @@ function generateQR(): void {
   applyBorder();
 
   updateLabels();
+  updateEmbedCode();
   $('downloadBtn').style.display = 'inline-block';
   $('exportBtns').style.display = 'flex';
 
@@ -1103,3 +1104,47 @@ function init3DPreview(): void {
     alert('3D-Vorschau wird in Phase 4 implementiert.');
   });
 }
+
+// =============================================
+// EMBED CODE
+// =============================================
+function updateEmbedCode(): void {
+  var embedSection = document.getElementById('embedSection');
+  if (!embedSection) return;
+
+  var content = generateQRContent(currentType, function(id) {
+    var el = document.getElementById(id);
+    return el ? (el as HTMLInputElement).value.trim() : '';
+  });
+
+  if (!content) {
+    embedSection.style.display = 'none';
+    return;
+  }
+
+  embedSection.style.display = 'block';
+  (document.getElementById('embedHtml') as HTMLInputElement).value = '<img src="qrcode.svg" alt="QR-Code" width="200" height="200">';
+  (document.getElementById('embedMarkdown') as HTMLInputElement).value = '![QR-Code](qrcode.svg)';
+  (document.getElementById('embedIframe') as HTMLInputElement).value = '<iframe src="qrcode.svg" width="200" height="200" frameborder="0"></iframe>';
+}
+
+function copyToClipboard(inputId: string, feedbackId: string): void {
+  var input = document.getElementById(inputId) as HTMLInputElement;
+  var feedback = document.getElementById(feedbackId) as HTMLElement;
+  navigator.clipboard.writeText(input.value).then(function() {
+    feedback.style.display = 'block';
+    setTimeout(function() { feedback.style.display = 'none'; }, 2000);
+  }).catch(function() {
+    input.select();
+    document.execCommand('copy');
+    feedback.style.display = 'block';
+    setTimeout(function() { feedback.style.display = 'none'; }, 2000);
+  });
+}
+
+var copyHtmlBtn = document.getElementById('copyHtmlBtn');
+if (copyHtmlBtn) copyHtmlBtn.addEventListener('click', function() { copyToClipboard('embedHtml', 'copyFeedback'); });
+var copyMdBtn = document.getElementById('copyMarkdownBtn');
+if (copyMdBtn) copyMdBtn.addEventListener('click', function() { copyToClipboard('embedMarkdown', 'copyFeedback'); });
+var copyIframeBtn = document.getElementById('copyIframeBtn');
+if (copyIframeBtn) copyIframeBtn.addEventListener('click', function() { copyToClipboard('embedIframe', 'copyFeedback'); });
