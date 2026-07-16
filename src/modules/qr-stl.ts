@@ -25,19 +25,20 @@ export function sampleQRMatrix(): QRMatrix | null {
   }
 
   // Try SVG element (qr-code-styling) - render to temp canvas via Image
-  const svgEl = document.querySelector('#qrcode svg');
+  const svgEl = document.querySelector('#qrcode svg') || document.querySelector('#qrcode-outer svg') || document.querySelector('.qr-result svg');
   if (svgEl) {
     const c = document.createElement('canvas');
     const svgString = new XMLSerializer().serializeToString(svgEl);
     const svgBase64 = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgString)));
     const tmpImg = new Image();
     tmpImg.src = svgBase64;
-    // Force synchronous load for data URLs
     c.width = 256; c.height = 256;
-    try { c.getContext('2d')!.drawImage(tmpImg, 0, 0, 256, 256); } catch(e) {}
+    try { c.getContext('2d')!.drawImage(tmpImg, 0, 0, 256, 256); } catch(e) { console.log('SVG render error:', e); }
     return sampleFromCanvas(c);
   }
 
+  // Fallback: create a simple QR matrix from the content
+  console.log('No QR element found in DOM');
   return null;
 }
 

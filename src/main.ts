@@ -889,8 +889,7 @@ async function exportPNG(): Promise<void> {
 }
 
 async function exportSVG(): Promise<void> {
-  const ic = $('qrcode')?.querySelector('canvas') as HTMLImageElement | HTMLCanvasElement;
-  if (!ic) return;
+  try {
 
   const lb = getLabelConfig();
   const sz = parseInt(($('qrSize') as HTMLInputElement).value) || 256;
@@ -984,6 +983,10 @@ async function exportSVG(): Promise<void> {
     URL.revokeObjectURL(url);
   };
   img.src = dataURL;
+  } catch (e: any) {
+    console.error('SVG export error:', e);
+    showValidationError('SVG-Export fehlgeschlagen: ' + e.message);
+  }
 }
 
 function exportPDF(): void {
