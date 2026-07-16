@@ -181,6 +181,18 @@ input[type="color"] { height: 50px; border-radius: 12px; border: 2px solid var(-
     border: 2px dashed var(--muted-border); border-radius: 12px;
     padding: 15px; text-align: center; cursor: pointer; transition: all 0.3s;
 }
+
+
+/* Drag & Drop */
+.logo-upload-area.dragover {
+    border-color: #667eea;
+    background: rgba(102, 126, 234, 0.1);
+    transform: scale(1.02);
+}
+.logo-upload-area.dragover i {
+    color: #667eea;
+}
+
 .logo-upload-area:hover { border-color: #667eea; }
 .logo-upload-area.has-logo { border-style: solid; border-color: #667eea; }
 .logo-preview { max-width: 80px; max-height: 80px; margin: 8px auto; display: block; border-radius: 8px; }

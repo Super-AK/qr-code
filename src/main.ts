@@ -255,14 +255,40 @@ function initLogo(): void {
     });
   });
 
+  // Drag & Drop handlers
+  area.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    area.classList.add('dragover');
+  });
+
+  area.addEventListener('dragleave', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    area.classList.remove('dragover');
+  });
+
+  area.addEventListener('drop', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    area.classList.remove('dragover');
+
+    const files = (e as DragEvent).dataTransfer?.files;
+    if (files && files.length > 0) {
+      const file = files[0];
+      if (file.type.startsWith('image/')) {
+        handleLogoFile(file);
+      }
+    }
+  });
+
   area.addEventListener('click', (e) => {
     if ((e.target as HTMLElement).closest('.preset-logo-btn')) return;
     input.click();
   });
 
-  input.addEventListener('change', (e) => {
-    const file = (e.target as HTMLInputElement).files?.[0];
-    if (!file) return;
+  // File handling function
+  function handleLogoFile(file: File) {
     const reader = new FileReader();
     reader.onload = (ev) => {
       const img = new Image();
@@ -272,10 +298,16 @@ function initLogo(): void {
         preview.style.display = 'block';
         remove.style.display = 'inline-block';
         area.classList.add('has-logo');
+        regenerateIfActive();
       };
       img.src = (ev.target as FileReader).result as string;
     };
     reader.readAsDataURL(file);
+  }
+
+  input.addEventListener('change', (e) => {
+    const file = (e.target as HTMLInputElement).files?.[0];
+    if (file) handleLogoFile(file);
   });
 
   remove.addEventListener('click', (e) => {
