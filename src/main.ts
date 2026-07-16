@@ -2,6 +2,8 @@ import { QR_TYPES, generateQRContent } from './modules/qr-types';
 import { createStyledQR, getStyledQRAsCanvas, getStyledQRAsDataURL, type DotStyle, type EyeStyle } from './modules/qr-design';
 import type { QRConfig, QRType, QRShape, HistoryItem } from './types';
 
+declare var THREE: any;
+
 // =============================================
 // App State
 // =============================================
@@ -1037,7 +1039,7 @@ function getLabelConfig() {
 // =============================================
 // STL Export (placeholder - will be full module later)
 // =============================================
-import { sampleQRMatrix, generateSTL, generate3MF, generateOBJ, downloadBlob } from './modules/qr-stl';
+import { sampleQRMatrix, generateSTL, generate3MF, generateOBJ, downloadBlob, mergeRectangles, optimizeRectangles } from './modules/qr-stl';
 
 function initSTLExport(): void {
   // Magnet type change handler
@@ -1058,13 +1060,20 @@ function initSTLExport(): void {
       diameter: parseFloat(($('magnetDiameter') as HTMLInputElement).value) || 6.0,
       depth: parseFloat(($('magnetDepth') as HTMLInputElement).value) || 2.0
     };
+    const frameConfig = {
+      enabled: ($('stlFrame3D') as HTMLInputElement).checked,
+      width: 2.0,
+      height: parseFloat(($('stlFrameHeight') as HTMLInputElement).value) || 2.0,
+      cornerRadius: 0
+    };
     const blob = generateSTL(
       sample,
       parseFloat(($('stlModuleSize') as HTMLInputElement).value) || 2.0,
       parseFloat(($('stlQrHeight') as HTMLInputElement).value) || 0.5,
       parseFloat(($('stlBaseThickness') as HTMLInputElement).value) || 2.0,
       ($('stlWithBase') as HTMLInputElement).checked,
-      magnetConfig
+      magnetConfig,
+      frameConfig
     );
     downloadBlob(blob, (($('stlFilename') as HTMLInputElement).value || 'qrcode') + '.stl');
   });
@@ -1099,9 +1108,163 @@ function initSTLExport(): void {
 // =============================================
 // 3D Preview (placeholder)
 // =============================================
+// =============================================
+// THREE.JS 3D PREVIEW
+// =============================================
+var threeScene: any = null;
+
+function disposeThreeScene(): void {
+  if (threeScene) {
+    if (threeScene.animId) cancelAnimationFrame(threeScene.animId);
+    if (threeScene.renderer) threeScene.renderer.dispose();
+    if (threeScene.controls) threeScene.controls.dispose();
+    if (threeScene.resizeH) window.removeEventListener('resize', threeScene.resizeH);
+    threeScene = null;
+  }
+}
+
+function renderSTLPreview3D(): void {
+  if (typeof THREE === 'undefined') { alert('Three.js wird noch geladen.'); return; }
+  if (typeof THREE.OrbitControls === 'undefined') { alert('OrbitControls wird noch geladen.'); return; }
+
+  var sample = sampleQRMatrix();
+  if (!sample) { alert('Kein QR-Code erkannt. Bitte zuerst QR-Code generieren.'); return; }
+
+  disposeThreeScene();
+
+  var container = document.getElementById('stlPreviewContainer') as HTMLElement;
+  container.classList.add('visible');
+
+  var width = container.clientWidth || 400;
+  var height = container.clientHeight || 320;
+
+  // Scene
+  var scene = new THREE.Scene();
+  scene.background = new THREE.Color(0xf0f0f0);
+
+  // Camera
+  var camera = new THREE.PerspectiveCamera(40, width/height, 0.1, 1000);
+
+  // Renderer
+  var renderer: any;
+  try {
+    renderer = new THREE.WebGLRenderer({antialias: true, alpha: true});
+  } catch(e) {
+    alert('WebGL nicht unterstützt.');
+    container.classList.remove('visible');
+    return;
+  }
+  renderer.setSize(width, height);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setClearColor(0xf0f0f0, 1);
+  var oldC = container.querySelector('canvas');
+  if (oldC) oldC.remove();
+  container.insertBefore(renderer.domElement, container.firstChild);
+
+  // Controls
+  var controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.08;
+
+  // Lighting
+  scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 0.6));
+  var dl = new THREE.DirectionalLight(0xffffff, 0.8);
+  dl.position.set(100, 200, 150); scene.add(dl);
+  var dl2 = new THREE.DirectionalLight(0xffffff, 0.3);
+  dl2.position.set(-100, 50, -100); scene.add(dl2);
+
+  // Parameters
+  var smm = parseFloat(($('stlModuleSize') as HTMLInputElement).value) || 2.0;
+  var mh = parseFloat(($('stlModuleHeight') as HTMLInputElement).value) || 2.0;
+  var bt = parseFloat(($('stlBaseThickness') as HTMLInputElement).value) || 2.0;
+  var inv = ($('stlInvert') as HTMLInputElement).checked;
+  var fe = ($('stlFrame3D') as HTMLInputElement).checked;
+  var fh = parseFloat(($('stlFrameHeight') as HTMLInputElement).value) || 2.0;
+  var grid = sample.grid;
+  var mods = sample.modules;
+  var ts = mods * smm;
+  var ht = ts / 2;
+
+  // Materials
+  var baseMat = new THREE.MeshPhongMaterial({color: 0xcccccc, shininess: 20});
+  var modMat = new THREE.MeshPhongMaterial({color: 0x1a1a1a, shininess: 40});
+  var frameMat = new THREE.MeshPhongMaterial({color: 0x999999, shininess: 30});
+
+  // Base plate
+  var baseGeo = new THREE.BoxGeometry(ts, ts, bt);
+  var baseMesh = new THREE.Mesh(baseGeo, baseMat);
+  baseMesh.position.set(0, 0, bt/2);
+  scene.add(baseMesh);
+
+  // Modules (merged rectangles)
+  var rects = mergeRectangles(grid, inv);
+  rects = optimizeRectangles(rects);
+  rects.forEach(function(r) {
+    var w = r.w * smm, h = r.h * smm;
+    var geo = new THREE.BoxGeometry(w, h, mh);
+    var mesh = new THREE.Mesh(geo, modMat);
+    mesh.position.set(r.x*smm + w/2 - ht, r.y*smm + h/2 - ht, bt + mh/2);
+    scene.add(mesh);
+  });
+
+  // 3D Frame
+  if (fe) {
+    var bw = Math.max(smm * 2, 2);
+    var zc = (bt + fh) / 2;
+    var tg = new THREE.BoxGeometry(ts+bw*2, bw, fh);
+    scene.add(Object.assign(new THREE.Mesh(tg, frameMat), {position: new THREE.Vector3(0, -ht-bw/2, zc)}));
+    scene.add(Object.assign(new THREE.Mesh(tg.clone(), frameMat), {position: new THREE.Vector3(0, ht+bw/2, zc)}));
+    var sg = new THREE.BoxGeometry(bw, ts, fh);
+    scene.add(Object.assign(new THREE.Mesh(sg, frameMat), {position: new THREE.Vector3(-ht-bw/2, 0, zc)}));
+    scene.add(Object.assign(new THREE.Mesh(sg.clone(), frameMat), {position: new THREE.Vector3(ht+bw/2, 0, zc)}));
+  }
+
+  // Camera
+  var maxDim = Math.max(ts, fh) * 1.4;
+  camera.position.set(maxDim, maxDim * 0.8, maxDim * 0.9);
+  camera.lookAt(0, 0, bt/2);
+  controls.target.set(0, 0, bt/2);
+  controls.update();
+
+  // Animation loop
+  var animFrameId: number | null = null;
+  function animate() {
+    animFrameId = requestAnimationFrame(animate);
+    controls.update();
+    renderer.render(scene, camera);
+  }
+  animate();
+
+  function onResize() {
+    var w2 = container.clientWidth, h2 = container.clientHeight;
+    if (w2 > 0 && h2 > 0) {
+      camera.aspect = w2/h2;
+      camera.updateProjectionMatrix();
+      renderer.setSize(w2, h2);
+    }
+  }
+  window.addEventListener('resize', onResize);
+
+  threeScene = {scene: scene, camera: camera, renderer: renderer, controls: controls, animId: animFrameId, resizeH: onResize};
+}
+
 function init3DPreview(): void {
-  $('stlPreviewBtn').addEventListener('click', () => {
-    alert('3D-Vorschau wird in Phase 4 implementiert.');
+  $('stlPreviewBtn').addEventListener('click', function() { renderSTLPreview3D(); });
+  $('stlResetCamera').addEventListener('click', function() {
+    if (!threeScene || !threeScene.camera) return;
+    var s = sampleQRMatrix(); if (!s) return;
+    var smm = parseFloat(($('stlModuleSize') as HTMLInputElement).value) || 2.0;
+    var bt = parseFloat(($('stlBaseThickness') as HTMLInputElement).value) || 2.0;
+    var ts = s.modules * smm;
+    var maxDim = Math.max(ts, parseFloat(($('stlFrameHeight') as HTMLInputElement).value) || 2.0) * 1.4;
+    threeScene.camera.position.set(maxDim, maxDim * 0.8, maxDim * 0.9);
+    threeScene.controls.target.set(0, 0, bt/2);
+    threeScene.controls.update();
+  });
+  $('stlClosePreview').addEventListener('click', function() {
+    disposeThreeScene();
+    $('stlPreviewContainer').classList.remove('visible');
   });
 }
 

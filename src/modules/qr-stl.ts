@@ -184,13 +184,21 @@ export interface MagnetConfig {
   depth: number;
 }
 
+export interface FrameConfig {
+  enabled: boolean;
+  width: number;
+  height: number;
+  cornerRadius: number;
+}
+
 export function generateSTL(
   matrix: QRMatrix,
   moduleSizeMM: number,
   qrHeight: number,
   baseThickness: number,
   withBase: boolean,
-  magnetConfig?: MagnetConfig
+  magnetConfig?: MagnetConfig,
+  frameConfig?: FrameConfig
 ): Blob {
   const tris: STLTriangle[] = [];
   const { grid, modules } = matrix;
@@ -279,6 +287,22 @@ export function generateSTL(
       (withBase ? baseThickness : 0) + qrHeight
     );
   });
+
+  // 3D Frame
+  if (frameConfig && frameConfig.enabled) {
+    const fw = frameConfig.width;
+    const fh = frameConfig.height;
+    const fOffset = fw / 2;
+
+    // Top wall
+    addBox(ox - fOffset, oy - fOffset, ts + fw*2, fw, baseThickness, baseThickness + fh);
+    // Bottom wall
+    addBox(ox - fOffset, oy + ts, ts + fw*2, fw, baseThickness, baseThickness + fh);
+    // Left wall
+    addBox(ox - fOffset, oy, fw, ts, baseThickness, baseThickness + fh);
+    // Right wall
+    addBox(ox + ts, oy, fw, ts, baseThickness, baseThickness + fh);
+  }
 
   // Build binary STL
   function normal(a: number[], b: number[], c: number[]): number[] {
