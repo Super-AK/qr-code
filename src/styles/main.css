@@ -342,6 +342,35 @@ input[type="color"] { height: 50px; border-radius: 12px; border: 2px solid var(-
     border-color: #667eea; background: rgba(102, 126, 234, 0.15); color: #667eea;
 }
 
+
+
+/* Embed Section */
+.embed-section {
+    background: var(--section-bg);
+    border-radius: 12px;
+    padding: 15px;
+    border: 1px solid var(--muted-border);
+}
+.embed-section .input-group {
+    border-radius: 8px;
+    overflow: hidden;
+}
+.embed-section .form-control {
+    font-size: 0.8rem;
+    font-family: monospace;
+    background: var(--input-bg);
+}
+.embed-section .btn {
+    border-radius: 0 8px 8px 0;
+}
+#copyFeedback {
+    animation: fadeIn 0.3s ease;
+}
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
 /* Export Buttons */
 .export-buttons { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; justify-content: center; }
 
