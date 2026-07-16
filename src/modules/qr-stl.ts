@@ -4,21 +4,46 @@ import type { QRMatrix } from '../types';
 // QR Matrix Sampling (from canvas)
 // =============================================
 export function sampleQRMatrix(): QRMatrix | null {
+  // Try canvas first
   const ic = document.querySelector('#qrcode canvas') as HTMLCanvasElement;
-  if (!ic) {
-    const img = document.querySelector('#qrcode img') as HTMLImageElement;
-    if (!img || !img.src) return null;
+  if (ic) {
+    const wasHidden = ic.style.display === 'none';
+    if (wasHidden) ic.style.display = 'block';
+    const result = sampleFromCanvas(ic);
+    if (wasHidden) ic.style.display = 'none';
+    return result;
+  }
+
+  // Try img element (QRCode.js fallback)
+  const img = document.querySelector('#qrcode img') as HTMLImageElement;
+  if (img && img.src) {
     const c = document.createElement('canvas');
     c.width = img.naturalWidth || img.width;
     c.height = img.naturalHeight || img.height;
     c.getContext('2d')!.drawImage(img, 0, 0, c.width, c.height);
     return sampleFromCanvas(c);
   }
-  const wasHidden = ic.style.display === 'none';
-  if (wasHidden) ic.style.display = 'block';
-  const result = sampleFromCanvas(ic);
-  if (wasHidden) ic.style.display = 'none';
-  return result;
+
+  // Try SVG element (qr-code-styling) - render to canvas
+  const svgEl = document.querySelector('#qrcode svg') as SVGElement;
+  if (svgEl) {
+    const c = document.createElement('canvas');
+    const svgData = new XMLSerializer().serializeToString(svgEl);
+    const svgBlob = new Blob([svgData], {type: 'image/svg+xml;charset=utf-8'});
+    const url = URL.createObjectURL(svgBlob);
+    const img2 = new Image();
+    img2.src = url;
+    // SVG images are loaded synchronously when using blob URLs
+    if (img2.complete) {
+      c.width = img2.naturalWidth || 256;
+      c.height = img2.naturalHeight || 256;
+      c.getContext('2d')!.drawImage(img2, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url);
+      return sampleFromCanvas(c);
+    }
+  }
+
+  return null;
 }
 
 function sampleFromCanvas(canvas: HTMLCanvasElement): QRMatrix | null {
